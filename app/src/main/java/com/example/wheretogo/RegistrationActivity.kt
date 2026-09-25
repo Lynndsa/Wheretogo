@@ -1,18 +1,23 @@
 package com.example.wheretogo
 
-
 import android.os.Bundle
-import android.widget.Button
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -20,41 +25,29 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import com.example.wheretogo.ui.theme.BackgroundColor
-import com.example.wheretogo.ui.theme.ButtonColor
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.ui.modifier.modifierLocalConsumer
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
+import com.example.wheretogo.ui.theme.AppDimens
+import com.example.wheretogo.ui.theme.BackgroundColor
+import com.example.wheretogo.ui.theme.ButtonTextStyle
+import com.example.wheretogo.ui.theme.InputFieldShape
+import com.example.wheretogo.ui.theme.LinkTextStyle
+import com.example.wheretogo.ui.theme.TextHeadStyle
+import com.example.wheretogo.ui.theme.TextLabelStyle
+import com.example.wheretogo.ui.theme.customTextFieldColors
+import com.example.wheretogo.ui.theme.primaryButtonColors
 
-class LoginActivity : AppCompatActivity() {
+class RegistrationActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent {
-            LoginWindow()
-        }
-    }
 
+    }
+}
     @Preview
     @Composable
-    fun LoginWindow() {
+    fun RegistrationWindow() {
         var name by remember { mutableStateOf("") }
         var number by remember { mutableStateOf("") }
         var email by remember { mutableStateOf("") }
@@ -66,168 +59,106 @@ class LoginActivity : AppCompatActivity() {
             modifier = Modifier
                 .fillMaxSize()
                 .background(BackgroundColor)
-                .padding(top = 50.dp, start = 5.dp, end = 5.dp)
-
+                .padding(
+                    top = AppDimens.ScreenPaddingTop,
+                    start = AppDimens.ScreenPaddingHorizontal,
+                    end = AppDimens.ScreenPaddingHorizontal
+                )
         ) {
+            Text(
+                text = "РЕГИСТРАЦИЯ",
+                style = TextHeadStyle,
+                modifier = Modifier.fillMaxWidth()
+            )
 
-            Text ("РЕГИСТРАЦИЯ",
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-                fontSize = 30.sp,
-                color = ButtonColor,
-                fontStyle = FontStyle.Italic,
-                fontWeight = FontWeight.Bold)
-
-            Spacer(modifier = Modifier.height(90.dp))
+            Spacer(modifier = Modifier.height(AppDimens.TitleBottomSpacer))
 
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Имя",
-                    fontSize = 17.sp,
-                    color = ButtonColor,
-                    fontStyle = FontStyle.Italic,
-                    fontWeight = FontWeight.Bold) },
-                shape = RoundedCornerShape(50.dp),
-                modifier = Modifier
-                    .fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = ButtonColor,
-                    unfocusedBorderColor = ButtonColor,
-                    cursorColor = ButtonColor,
-                    focusedTextColor = ButtonColor,
-                )
+                label = { Text("Имя", style = TextLabelStyle) },
+                shape = InputFieldShape,
+                modifier = Modifier.fillMaxWidth(),
+                colors = customTextFieldColors()
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(AppDimens.FieldSpacing))
 
             OutlinedTextField(
                 value = number,
                 onValueChange = { number = it },
-                label = { Text("Номер телефона",
-                    fontSize = 17.sp,
-                    color = ButtonColor,
-                    fontStyle = FontStyle.Italic,
-                    fontWeight = FontWeight.Bold) },
-                shape = RoundedCornerShape(50.dp),
-                modifier = Modifier
-                    .fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = ButtonColor,
-                    unfocusedBorderColor = ButtonColor,
-                    cursorColor = ButtonColor,
-                    focusedTextColor = ButtonColor,
-                )
+                label = { Text("Номер телефона", style = TextLabelStyle) },
+                shape = InputFieldShape,
+                modifier = Modifier.fillMaxWidth(),
+                colors = customTextFieldColors()
             )
-            Spacer(modifier = Modifier.height(16.dp))
+
+            Spacer(modifier = Modifier.height(AppDimens.FieldSpacing))
 
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Почта",
-                    fontSize = 17.sp,
-                    color = ButtonColor,
-                    fontStyle = FontStyle.Italic,
-                    fontWeight = FontWeight.Bold) },
-                shape = RoundedCornerShape(50.dp),
-                modifier = Modifier
-                    .fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = ButtonColor,
-                    unfocusedBorderColor = ButtonColor,
-                    cursorColor = ButtonColor,
-                    focusedTextColor = ButtonColor,
-                )
+                label = { Text("Почта", style = TextLabelStyle) },
+                shape = InputFieldShape,
+                modifier = Modifier.fillMaxWidth(),
+                colors = customTextFieldColors()
             )
-            Spacer(modifier = Modifier.height(16.dp))
+
+            Spacer(modifier = Modifier.height(AppDimens.FieldSpacing))
+
+            val passwordIcon: @Composable () -> Unit = {
+                val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                val description = if (passwordVisible) "Скрыть пароль" else "Показать пароль"
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(imageVector = image, contentDescription = description)
+                }
+            }
+
+            val passwordTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation('*')
 
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Пароль",
-                    fontSize = 17.sp,
-                    color = ButtonColor,
-                    fontStyle = FontStyle.Italic,
-                    fontWeight = FontWeight.Bold) },
-                shape = RoundedCornerShape(50.dp),
-                modifier = Modifier
-                    .fillMaxWidth(),
-                visualTransformation =
-                    if (passwordVisible) VisualTransformation.None
-                    else PasswordVisualTransformation(
-                        '*'),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = ButtonColor,
-                    unfocusedBorderColor = ButtonColor,
-                    cursorColor = ButtonColor,
-                    focusedTextColor = ButtonColor,
-                ),
-                trailingIcon = {
-                    val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
-                    val description = if (passwordVisible) "Скрыть пароль" else "Показать пароль"
-
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(imageVector = image, contentDescription = description)
-                    }
-                }
+                label = { Text("Пароль", style = TextLabelStyle) },
+                shape = InputFieldShape,
+                modifier = Modifier.fillMaxWidth(),
+                visualTransformation = passwordTransformation,
+                colors = customTextFieldColors(),
+                trailingIcon = passwordIcon
             )
-            Spacer(modifier = Modifier.height(16.dp))
+
+            Spacer(modifier = Modifier.height(AppDimens.FieldSpacing))
 
             OutlinedTextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
-                label = { Text("Повторите пароль",
-                    fontSize = 17.sp,
-                    color = ButtonColor,
-                    fontStyle = FontStyle.Italic,
-                    fontWeight = FontWeight.Bold) },
-                shape = RoundedCornerShape(50.dp),
-                modifier = Modifier
-                    .fillMaxWidth(),
-                visualTransformation =
-                    if (passwordVisible) VisualTransformation.None
-                    else PasswordVisualTransformation(
-                        '*'),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = ButtonColor,
-                    unfocusedBorderColor = ButtonColor,
-                    cursorColor = ButtonColor,
-                    focusedTextColor = ButtonColor,
-                ),
-                trailingIcon = {
-                    val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
-                    val description = if (passwordVisible) "Скрыть пароль" else "Показать пароль"
-
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(imageVector = image, contentDescription = description)
-                    }
-                }
+                label = { Text("Повторите пароль", style = TextLabelStyle) },
+                shape = InputFieldShape,
+                modifier = Modifier.fillMaxWidth(),
+                visualTransformation = passwordTransformation,
+                colors = customTextFieldColors(),
+                trailingIcon = passwordIcon
             )
-            Spacer(modifier = Modifier.height(120.dp))
+
+            Spacer(modifier = Modifier.height(AppDimens.ButtonTopSpacer))
 
             Button(
-                onClick = {  },
-                modifier = Modifier.padding(start = 30.dp, end = 30.dp)
+                onClick = { },
+                modifier = Modifier
+                    .padding(horizontal = AppDimens.ButtonHorizontalPadding)
                     .fillMaxWidth()
-                    .height(60.dp),
-                colors = ButtonDefaults.buttonColors(ButtonColor),
-
-                ) {
-                Text(text = "Зарегистрироваться",
-                    color = BackgroundColor,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                    .height(AppDimens.ButtonHeight),
+                colors = primaryButtonColors()
+            ) {
+                Text(text = "Зарегистрироваться", style = ButtonTextStyle)
             }
-            Spacer(modifier = Modifier.height(10.dp))
 
-            Text(text = "Есть аккаунт",
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-                color = ButtonColor,
-                fontSize = 15.sp,
-                textDecoration = TextDecoration.Underline)
+            Spacer(modifier = Modifier.height(AppDimens.LinkTopSpacer))
 
+            Text(
+                text = "Есть аккаунт",
+                style = LinkTextStyle,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
-}

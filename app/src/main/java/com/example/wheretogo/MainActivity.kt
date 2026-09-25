@@ -6,30 +6,34 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import com.example.wheretogo.ui.theme.AppDimens
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.wheretogo.ui.theme.WhereToGoTheme
+import com.example.wheretogo.ui.theme.BackgroundColor
+import com.example.wheretogo.ui.theme.ButtonColor
+import com.example.wheretogo.ui.theme.ButtonTextStyle
+import com.example.wheretogo.ui.theme.LinkTextStyle
+import com.example.wheretogo.ui.theme.TextLabelStyle
+import com.example.wheretogo.ui.theme.primaryButtonColors
 
 
 class MainActivity : ComponentActivity() {
@@ -37,16 +41,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-
+            Greeting()
         }
     }
 }
-
+@Preview
 @Composable
 fun Greeting() {
     Box(
         modifier = Modifier.fillMaxSize()
-    ){
+    ) {
         // 1. Фоновое изображение на весь экран
         Image(
             modifier = Modifier.fillMaxSize(),
@@ -54,48 +58,63 @@ fun Greeting() {
             painter = painterResource(id = R.drawable.main_activity),
             contentScale = ContentScale.Crop
         )
-        
-        // 2. Колонка для размещения логотипа и текста друг под другом
+
+        // 2. Основной контент
         Column(
+
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(
+                    top = AppDimens.ScreenPaddingTop,
+                    start = AppDimens.ScreenPaddingHorizontal,
+                    end = AppDimens.ScreenPaddingHorizontal
+                ),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
-                modifier = Modifier.size(400.dp),
+                modifier = Modifier.size(350.dp),
                 contentDescription = "Лого WhereToGo",
-                painter = painterResource(id = R.drawable.logo),
+                painter = painterResource(id = R.drawable.logo)
             )
+
             Text(
                 text = "Экскурсии, достопримечательности и просто интересные места",
-                textAlign = TextAlign.Center
+                color = ButtonColor,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                fontStyle = FontStyle.Italic,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
-            Button(
-                modifier = Modifier
-                    .fillMaxWidth(0.6f) // Занимает 70% ширины экрана, делая кнопку шире
-                    .align(Alignment.CenterHorizontally)
-                    .padding(top = 200.dp),
-                onClick = { /*TODO*/ },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF315C45), // Цвет фона кнопки (например, синий)
-                    contentColor = Color.White        // Цвет текста кнопки
-                )
-            ) {
-                Text(text = "Войти", fontSize = 20.sp, fontWeight = FontWeight.Bold) // Текст перенесен внутрь тела кнопки
-            }
-            Text (
-                modifier = Modifier.clickable{/*TODO*/},
-                text = "Нет аккаунта? Зарегистрироваться"
-            )
-        }
-    }
-}
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    WhereToGoTheme {
-        Greeting()
+
+            Spacer(modifier = Modifier.height(230.dp))
+
+            Button(
+                onClick = { },
+                modifier = Modifier
+                    .padding(horizontal = AppDimens.ButtonHorizontalPadding)
+                    .fillMaxWidth()
+                    .height(AppDimens.ButtonHeight),
+                colors = primaryButtonColors()
+            ) {
+                Text(
+                    text = "Войти",
+                    style = ButtonTextStyle
+                )
+            }
+
+            Spacer(modifier = Modifier.height(AppDimens.LinkTopSpacer))
+
+            Text(
+                text = "Нет аккаунта? Зарегистрироваться",
+                style = LinkTextStyle,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { /* TODO: Перейти на экран регистрации */ }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
     }
 }
