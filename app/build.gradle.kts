@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.wheretogo"
-        minSdk = 25
+        minSdk = 26
         targetSdk = 37
         versionCode = 1
         versionName = "1.0"
@@ -49,6 +49,10 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.material)
+
+    // Для Яндекс Карт
+    implementation("com.yandex.android:maps.mobile:4.8.0-full")
+
     implementation("androidx.compose.material:material-icons-extended")
 
     testImplementation(libs.junit)

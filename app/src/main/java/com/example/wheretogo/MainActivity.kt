@@ -28,22 +28,47 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.example.wheretogo.ui.theme.BackgroundColor
 import com.example.wheretogo.ui.theme.ButtonColor
 import com.example.wheretogo.ui.theme.ButtonTextStyle
 import com.example.wheretogo.ui.theme.LinkTextStyle
 import com.example.wheretogo.ui.theme.TextLabelStyle
 import com.example.wheretogo.ui.theme.primaryButtonColors
+import com.yandex.mapkit.MapKitFactory
+import com.yandex.mapkit.geometry.Point
+import com.yandex.mapkit.map.CameraPosition
+import com.yandex.mapkit.mapview.MapView
 
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        MapKitFactory.setApiKey("3c99d87c-a288-458d-a597-041985b98f3f")
         setContent {
-            Greeting()
+            YandexMapView()
         }
     }
+}
+@Composable
+fun YandexMapView() {
+    AndroidView(
+        factory = { context ->
+            MapView(context).apply {
+                MapKitFactory.getInstance().onStart()
+                mapWindow.map.move(
+                    CameraPosition(
+                        Point(55.751244, 37.618423), // Координаты (Москва)
+                        11.0f, // Масштаб (Zoom)
+                        0.0f,
+                        0.0f
+                    )
+                )
+            }
+        },
+        modifier = Modifier.fillMaxSize()
+    )
 }
 @Preview
 @Composable
