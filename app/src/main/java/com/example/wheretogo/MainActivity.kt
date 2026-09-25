@@ -17,10 +17,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.example.wheretogo.ui.theme.AppDimens
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -46,6 +49,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         MapKitFactory.setApiKey("3c99d87c-a288-458d-a597-041985b98f3f")
+        MapKitFactory.initialize(this)
         setContent {
             YandexMapView()
         }
@@ -53,20 +57,23 @@ class MainActivity : ComponentActivity() {
 }
 @Composable
 fun YandexMapView() {
+    val context = LocalContext.current
+    val mapView = remember { MapView(context) }
+
+    DisposableEffect(Unit) {
+        // Запускаем работу MapKit
+        MapKitFactory.getInstance().onStart()
+        mapView.onStart()
+
+        onDispose {
+            // Останавливаем работу MapKit при выходе с экрана
+            mapView.onStop()
+            MapKitFactory.getInstance().onStop()
+        }
+    }
+
     AndroidView(
-        factory = { context ->
-            MapView(context).apply {
-                MapKitFactory.getInstance().onStart()
-                mapWindow.map.move(
-                    CameraPosition(
-                        Point(55.751244, 37.618423), // Координаты (Москва)
-                        11.0f, // Масштаб (Zoom)
-                        0.0f,
-                        0.0f
-                    )
-                )
-            }
-        },
+        factory = { mapView },
         modifier = Modifier.fillMaxSize()
     )
 }
