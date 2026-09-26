@@ -15,15 +15,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.example.wheretogo.ui.theme.AppDimens
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -31,34 +29,33 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import com.example.wheretogo.ui.theme.BackgroundColor
+import androidx.navigation.compose.rememberNavController
+import com.example.wheretogo.navigation.AppNavHost
 import com.example.wheretogo.ui.theme.ButtonColor
 import com.example.wheretogo.ui.theme.ButtonTextStyle
 import com.example.wheretogo.ui.theme.LinkTextStyle
-import com.example.wheretogo.ui.theme.TextLabelStyle
 import com.example.wheretogo.ui.theme.primaryButtonColors
-import com.yandex.mapkit.MapKitFactory
-import com.yandex.mapkit.geometry.Point
-import com.yandex.mapkit.map.CameraPosition
-import com.yandex.mapkit.mapview.MapView
 
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        MapKitFactory.setApiKey("3c99d87c-a288-458d-a597-041985b98f3f")
-        MapKitFactory.initialize(this)
         setContent {
-            YandexMapView()
+            Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                Box(
+                    modifier = Modifier.padding(innerPadding)
+                ) {
+                    val navController = rememberNavController()
+                    AppNavHost(navController = navController)
+                }
+            }
         }
     }
 }
 
-@Preview
 @Composable
-fun Greeting() {
+fun Greeting(LoginClick:() -> Unit) {
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -72,7 +69,6 @@ fun Greeting() {
 
         // 2. Основной контент
         Column(
-
             modifier = Modifier
                 .fillMaxSize()
                 .padding(
@@ -99,10 +95,10 @@ fun Greeting() {
             )
 
 
-            Spacer(modifier = Modifier.height(230.dp))
+            Spacer(modifier = Modifier.height(AppDimens.ButtonTopSpacer))
 
             Button(
-                onClick = { },
+                onClick = LoginClick,
                 modifier = Modifier
                     .padding(horizontal = AppDimens.ButtonHorizontalPadding)
                     .fillMaxWidth()
@@ -118,7 +114,7 @@ fun Greeting() {
             Spacer(modifier = Modifier.height(AppDimens.LinkTopSpacer))
 
             Text(
-                text = "Нет аккаунта? Зарегистрироваться",
+                text = "Продолжить как гость",
                 style = LinkTextStyle,
                 modifier = Modifier
                     .fillMaxWidth()

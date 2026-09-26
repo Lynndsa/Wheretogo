@@ -32,12 +32,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
+import com.example.wheretogo.ui.theme.LinkTextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+
 import com.example.wheretogo.ui.theme.BackgroundColor
 import com.example.wheretogo.ui.theme.ButtonColor
 
@@ -48,9 +47,9 @@ class LoginActivity : AppCompatActivity() {
 
     }
 }
-@Preview
+
 @Composable
-fun LoginWindow() {
+fun LoginWindow( RedistrationClick:() -> Unit ) {
     var name by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -140,7 +139,7 @@ fun LoginWindow() {
         )
         Spacer(modifier = Modifier.height(300.dp))
         Button(
-            onClick = {  },
+            onClick = RedistrationClick,
             modifier = Modifier
                 .padding(start = 30.dp, end = 30.dp)
                 .fillMaxWidth()
@@ -157,12 +156,10 @@ fun LoginWindow() {
         Spacer(modifier = Modifier.height(10.dp))
 
         Text(
+            onClick = {},
             text = "Нет аккаунта?\nЗарегистрируйтесь",
-            textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
-            color = ButtonColor,
-            fontSize = 15.sp,
-            textDecoration = TextDecoration.Underline
+            style = LinkTextStyle,
         )
 
 
