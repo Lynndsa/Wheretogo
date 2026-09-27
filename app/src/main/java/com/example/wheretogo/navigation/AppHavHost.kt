@@ -17,15 +17,17 @@ fun AppNavHost(
         startDestination = Destination.Main.route,
     ) {
         composable(route = Destination.Registration.route) {
-            RegistrationWindow()
+            RegistrationWindow(onLoginClick = { navController.navigate(Destination.Login.route) })
         }
         composable(route = Destination.Login.route) {
+            LoginWindow(onRedistrationClick = {
+                navController.navigate(Destination.Registration.route) })
 
         }
         composable(route = Destination.Main.route) {
-            Greeting(LoginClick = {
-                navController.navigate(Destination.Login.route)
-            })
+            Greeting(
+                onLoginClick = { navController.navigate(Destination.Login.route) },
+                onGuestClick = { navController.navigate(Destination.Registration.route) })
         }
     }
 }

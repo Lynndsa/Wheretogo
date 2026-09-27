@@ -55,7 +55,8 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(LoginClick:() -> Unit) {
+fun Greeting(onLoginClick: () -> Unit,
+             onGuestClick: () -> Unit) {
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -98,7 +99,7 @@ fun Greeting(LoginClick:() -> Unit) {
             Spacer(modifier = Modifier.height(AppDimens.ButtonTopSpacer))
 
             Button(
-                onClick = LoginClick,
+                onClick = onLoginClick,
                 modifier = Modifier
                     .padding(horizontal = AppDimens.ButtonHorizontalPadding)
                     .fillMaxWidth()
@@ -118,7 +119,7 @@ fun Greeting(LoginClick:() -> Unit) {
                 style = LinkTextStyle,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { /* TODO: Перейти на экран регистрации */ }
+                    .clickable { onGuestClick() }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
