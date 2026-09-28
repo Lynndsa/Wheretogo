@@ -51,6 +51,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.material)
+    implementation("com.yandex.android:maps.mobile:4.42.0-full")
 
     // Для Яндекс Карт
     implementation("com.yandex.android:maps.mobile:4.8.0-full")
