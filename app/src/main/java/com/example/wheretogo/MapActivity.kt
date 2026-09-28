@@ -76,7 +76,7 @@ fun MapWindow() {
                 .padding(5.dp)
                 .clip(RoundedCornerShape(20.dp))
         ) {
-            YandexMapView()
+            MapScreen()
         }
 
     }

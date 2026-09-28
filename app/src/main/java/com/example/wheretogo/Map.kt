@@ -9,6 +9,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.mapview.MapView
+import org.maplibre.android.geometry.LatLng
 
 @Composable
 fun YandexMapView() {
@@ -30,5 +31,16 @@ fun YandexMapView() {
     AndroidView(
         factory = { mapView },
         modifier = Modifier.fillMaxSize()
+    )
+}
+
+@Composable
+fun MapScreen() {
+    val mapTilerStyleUrl = "https://api.maptiler.com/maps/base-v4/style.json?key=E0xNLSUQFbDl83g71Xew"
+
+    MapLibreView(
+        styleUrl = mapTilerStyleUrl,
+        initialCenter = LatLng(59.9386, 30.3141), // Центр на Санкт-Петербург
+        initialZoom = 11.0
     )
 }
