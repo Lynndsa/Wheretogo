@@ -51,7 +51,7 @@ class MainActivity : ComponentActivity() {
         MapKitFactory.setApiKey("3c99d87c-a288-458d-a597-041985b98f3f")
         MapKitFactory.initialize(this)
         setContent {
-            YandexMapView()
+            MapWindow()
         }
     }
 }
