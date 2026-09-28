@@ -53,8 +53,10 @@ dependencies {
     implementation(libs.material)
     implementation("com.yandex.android:maps.mobile:4.42.0-full")
 
-    // Для Яндекс Карт
-    implementation("com.yandex.android:maps.mobile:4.8.0-full")
+    implementation("org.maplibre.gl:android-sdk:11.5.1")
+
+    // Для загрузки изображений в Compose (если еще не было подключено)
+    implementation("io.coil-kt:coil-compose:2.6.0")
 
     implementation("androidx.compose.material:material-icons-extended")
 
