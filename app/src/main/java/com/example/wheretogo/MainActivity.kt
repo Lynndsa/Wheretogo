@@ -1,0 +1,121 @@
+package com.example.wheretogo
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import com.example.wheretogo.ui.theme.AppDimens
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.compose.rememberNavController
+import com.example.wheretogo.navigation.AppNavHost
+import com.example.wheretogo.ui.theme.ButtonColor
+import com.example.wheretogo.ui.theme.ButtonTextStyle
+import com.example.wheretogo.ui.theme.LinkTextStyle
+import com.example.wheretogo.ui.theme.primaryButtonColors
+
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            MapWindow()
+        }
+    }
+}
+
+@Composable
+fun Greeting(onLoginClick: () -> Unit,
+             onGuestClick: () -> Unit) {
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        // 1. Фоновое изображение на весь экран
+        Image(
+            modifier = Modifier.fillMaxSize(),
+            contentDescription = "Фон главного экрана",
+            painter = painterResource(id = R.drawable.main_activity),
+            contentScale = ContentScale.Crop
+        )
+
+        // 2. Основной контент
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(
+                    top = AppDimens.ScreenPaddingTop,
+                    start = AppDimens.ScreenPaddingHorizontal,
+                    end = AppDimens.ScreenPaddingHorizontal
+                ),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Image(
+                modifier = Modifier.size(350.dp),
+                contentDescription = "Лого WhereToGo",
+                painter = painterResource(id = R.drawable.logo)
+            )
+
+            Text(
+                text = "Экскурсии, достопримечательности и просто интересные места",
+                color = ButtonColor,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                fontStyle = FontStyle.Italic,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+
+            Spacer(modifier = Modifier.height(AppDimens.ButtonTopSpacer))
+
+            Button(
+                onClick = onLoginClick,
+                modifier = Modifier
+                    .padding(horizontal = AppDimens.ButtonHorizontalPadding)
+                    .fillMaxWidth()
+                    .height(AppDimens.ButtonHeight),
+                colors = primaryButtonColors()
+            ) {
+                Text(
+                    text = "Войти",
+                    style = ButtonTextStyle
+                )
+            }
+
+            Spacer(modifier = Modifier.height(AppDimens.LinkTopSpacer))
+
+            Text(
+                text = "Продолжить как гость",
+                style = LinkTextStyle,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onGuestClick() }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
