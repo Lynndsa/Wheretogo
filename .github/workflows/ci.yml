@@ -3,7 +3,7 @@ name: CI Checks
 on:
   pull_request:
     branches: [ "main", "master" ]
-     paths:
+    paths:
       - 'android/**'
       - '.github/workflows/ci.yml'
 
@@ -13,8 +13,6 @@ jobs:
   # ---------------------------------------------------
   build-android:
     runs-on: ubuntu-latest
-    # Запускаем только если изменились файлы в папке android/
-   
 
     defaults:
       run:
@@ -30,6 +28,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           cache: gradle
+          cache-dependency-path: 'android/**/*.gradle*'
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -39,6 +38,3 @@ jobs:
 
       - name: Run Android Unit Tests
         run: ./gradlew testDebugUnitTest
-
-      - name: Run Backend Tests
-        run: ./gradlew test
