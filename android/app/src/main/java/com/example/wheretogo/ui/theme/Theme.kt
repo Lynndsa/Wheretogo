@@ -69,7 +69,6 @@ val LinkTextStyle = TextStyle(
     textAlign = TextAlign.Center,
     fontSize = 15.sp,
     color = ButtonColor,
-    textDecoration = TextDecoration.Underline
 
 )
 val InputFieldShape = RoundedCornerShape(50.dp)

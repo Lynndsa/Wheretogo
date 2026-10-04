@@ -5,7 +5,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -46,8 +45,9 @@ class RegistrationActivity : AppCompatActivity() {
 
     }
 }
+    @Preview
     @Composable
-    fun RegistrationWindow(onLoginClick: () -> Unit) {
+    fun RegistrationWindow() {
         var name by remember { mutableStateOf("") }
         var number by remember { mutableStateOf("") }
         var email by remember { mutableStateOf("") }
@@ -158,9 +158,7 @@ class RegistrationActivity : AppCompatActivity() {
             Text(
                 text = "Есть аккаунт",
                 style = LinkTextStyle,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onLoginClick)
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }
