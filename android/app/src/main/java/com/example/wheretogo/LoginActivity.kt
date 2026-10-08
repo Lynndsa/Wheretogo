@@ -36,8 +36,6 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.example.wheretogo.ui.theme.BackgroundColor
 import com.example.wheretogo.ui.theme.ButtonColor
 
@@ -50,7 +48,7 @@ class LoginActivity : AppCompatActivity() {
 }
 @Preview
 @Composable
-fun LoginWindow() {
+fun LoginWindow(onRedistrationClick: () -> Unit) {
     var name by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
