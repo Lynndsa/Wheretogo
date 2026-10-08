@@ -8,15 +8,12 @@ on:
       - '.github/workflows/ci.yml'
 
 jobs:
-  # ---------------------------------------------------
-  # 1. Сборка и тесты Android-приложения
-  # ---------------------------------------------------
   build-android:
     runs-on: ubuntu-latest
 
     defaults:
       run:
-        working-directory: android # Указываем рабочую папку для всех команд
+        working-directory: android
 
     steps:
       - name: Checkout repository
@@ -30,11 +27,17 @@ jobs:
           cache: gradle
           cache-dependency-path: 'android/**/*.gradle*'
 
+      # Создаем dummy-файл local.properties для успешной сборки Gradle
+      - name: Create local.properties
+        run: |
+          echo "MAPKIT_API_KEY=dummy_key_for_ci" > local.properties
+          echo "sdk.dir=$ANDROID_HOME" >> local.properties
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
       - name: Build Android project
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleDebug --stacktrace
 
       - name: Run Android Unit Tests
         run: ./gradlew testDebugUnitTest
