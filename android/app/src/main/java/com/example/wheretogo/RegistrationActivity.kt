@@ -1,7 +1,6 @@
 package com.example.wheretogo
 
 import android.os.Bundle
-import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
@@ -47,7 +46,7 @@ class RegistrationActivity : AppCompatActivity() {
 }
     @Preview
     @Composable
-    fun RegistrationWindow() {
+    fun RegistrationWindow(onLoginClick: () -> Unit) {
         var name by remember { mutableStateOf("") }
         var number by remember { mutableStateOf("") }
         var email by remember { mutableStateOf("") }
