@@ -19,4 +19,3 @@ android/build/
 .gradle/
 android/.gradle/
 **/.idea/
-android/local.properties

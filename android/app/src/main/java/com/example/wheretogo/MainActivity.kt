@@ -45,14 +45,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                Box(
-                    modifier = Modifier.padding(innerPadding)
-                ) {
-                    val navController = rememberNavController()
-                    AppNavHost(navController = navController)
-                }
-            }
+//            Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+//                Box(
+//                    modifier = Modifier.padding(innerPadding)
+//                ) {
+//                    val navController = rememberNavController()
+//                    AppNavHost(navController = navController)
+//                }
+//            }
+            MapWindow()
         }
     }
 }

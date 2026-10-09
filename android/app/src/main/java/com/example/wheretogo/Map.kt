@@ -26,7 +26,7 @@ import org.maplibre.android.geometry.LatLngBounds
 @Composable
 fun MapScreen() {
     val context = LocalContext.current
-    val mapTilerStyleUrl = "https://api.maptiler.com/maps/base-v4/style.json?key=E0xNLSUQFbDl83g71Xew"
+    val mapTilerStyleUrl = "https://api.maptiler.com/maps/base-v4/style.json?key=${BuildConfig.MAPTILER_API_KEY}"
 
     val offlineMapManager = remember { OfflineMapManager(context) }
 
