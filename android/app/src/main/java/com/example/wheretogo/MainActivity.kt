@@ -37,7 +37,7 @@ import com.example.wheretogo.ui.theme.ButtonColor
 import com.example.wheretogo.ui.theme.ButtonTextStyle
 import com.example.wheretogo.ui.theme.LinkTextStyle
 import com.example.wheretogo.ui.theme.primaryButtonColors
-import com.yandex.mapkit.MapKitFactory
+
 
 
 class MainActivity : ComponentActivity() {
