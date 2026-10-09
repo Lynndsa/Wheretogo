@@ -68,8 +68,6 @@ dependencies {
     implementation(libs.material)
     implementation("androidx.compose.material:material-icons-extended")
 
-    // Яндекс Карты
-    implementation("com.yandex.android:maps.mobile:4.42.0-full")
 
     // MapLibre
     implementation("org.maplibre.gl:android-sdk:11.5.1")
