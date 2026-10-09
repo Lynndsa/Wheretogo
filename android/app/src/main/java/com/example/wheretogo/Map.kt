@@ -21,29 +21,6 @@ import kotlinx.coroutines.withContext
 
 import org.maplibre.android.geometry.LatLngBounds
 
-@Composable
-fun YandexMapView() {
-    val context = LocalContext.current
-    val mapView = remember { MapView(context) }
-
-    DisposableEffect(Unit) {
-        // Запускаем работу MapKit
-        MapKitFactory.getInstance().onStart()
-        mapView.onStart()
-
-        onDispose {
-            // Останавливаем работу MapKit при выходе с экрана
-            mapView.onStop()
-            MapKitFactory.getInstance().onStop()
-        }
-    }
-
-    AndroidView(
-        factory = { mapView },
-        modifier = Modifier.fillMaxSize()
-    )
-}
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
