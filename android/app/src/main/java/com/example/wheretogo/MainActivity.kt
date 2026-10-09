@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -15,8 +16,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.example.wheretogo.ui.theme.AppDimens
@@ -28,6 +31,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.compose.rememberNavController
+import com.example.wheretogo.navigation.AppNavHost
 import com.example.wheretogo.ui.theme.ButtonColor
 import com.example.wheretogo.ui.theme.ButtonTextStyle
 import com.example.wheretogo.ui.theme.LinkTextStyle
@@ -39,15 +44,19 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        MapKitFactory.setApiKey("3c99d87c-a288-458d-a597-041985b98f3f")
-        MapKitFactory.initialize(this)
         setContent {
-            YandexMapView()
+            Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                Box(
+                    modifier = Modifier.padding(innerPadding)
+                ) {
+                    val navController = rememberNavController()
+                    AppNavHost(navController = navController)
+                }
+            }
         }
     }
 }
 
-@Preview
 @Composable
 fun Greeting(onLoginClick: () -> Unit, onGuestClick: () -> Unit) {
     Box(
@@ -93,7 +102,7 @@ fun Greeting(onLoginClick: () -> Unit, onGuestClick: () -> Unit) {
             Spacer(modifier = Modifier.height(230.dp))
 
             Button(
-                onClick = { },
+                onClick = { onLoginClick() },
                 modifier = Modifier
                     .padding(horizontal = AppDimens.ButtonHorizontalPadding)
                     .fillMaxWidth()
@@ -113,7 +122,11 @@ fun Greeting(onLoginClick: () -> Unit, onGuestClick: () -> Unit) {
                 style = LinkTextStyle,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { /* TODO: Перейти на экран регистрации */ }
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onGuestClick
+                    )
             )
 
             Spacer(modifier = Modifier.height(24.dp))

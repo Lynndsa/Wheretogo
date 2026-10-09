@@ -1,6 +1,8 @@
 package com.example.wheretogo
 
 import android.os.Bundle
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
@@ -44,7 +46,6 @@ class RegistrationActivity : AppCompatActivity() {
 
     }
 }
-    @Preview
     @Composable
     fun RegistrationWindow(onLoginClick: () -> Unit) {
         var name by remember { mutableStateOf("") }
@@ -157,7 +158,13 @@ class RegistrationActivity : AppCompatActivity() {
             Text(
                 text = "Есть аккаунт",
                 style = LinkTextStyle,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onLoginClick
+                    )
             )
         }
     }
