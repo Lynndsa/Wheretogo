@@ -59,16 +59,11 @@ public class AttractionService {
                     wikipediaUrl = wikiData.get("wikiUrl");
                 }
             }
-
-            // 2. ФОЛЛБЭК: Пробуем искать по названию, ТОЛЬКО если оно написано по-русски (на кириллице)
-            if (description == null && isCyrillic(title)) {
-                Map<String, String> fallbackWikiData = wikipediaService.getWikiData("ru:" + title);
-                if (fallbackWikiData.containsKey("description")) {
-                    description = fallbackWikiData.get("description");
-                    imageUrl = fallbackWikiData.get("imageUrl");
-                    wikipediaUrl = fallbackWikiData.get("wikiUrl");
-                }
+            // В AttractionService.java:
+            if (description == null) {
+                continue; // Пропускаем мелкие точки и заведения без статьи в Википедии
             }
+
 
             AttractionDto dto = AttractionDto.builder()
                     .title(title)

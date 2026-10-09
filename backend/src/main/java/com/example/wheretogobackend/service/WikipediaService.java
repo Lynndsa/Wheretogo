@@ -78,9 +78,12 @@ public class WikipediaService {
 
     private String searchArticleTitle(String lang, String query) {
         try {
+            // Очищаем запрос от слов "музей", "памятник", если они мешают, или ищем строгим opensearch
             String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
+
+            // Используем opensearch — он ищет ТОЛЬКО по заголовкам статей, а не по всему тексту
             String searchUrl = String.format(
-                    "https://%s.wikipedia.org/w/api.php?action=query&list=search&srsearch=%s&format=json",
+                    "https://%s.wikipedia.org/w/api.php?action=opensearch&search=%s&limit=1&namespace=0&format=json",
                     lang, encodedQuery
             );
 
@@ -91,11 +94,11 @@ public class WikipediaService {
                     .bodyToMono(JsonNode.class)
                     .block();
 
-            if (response != null && response.has("query")) {
-                JsonNode searchResults = response.get("query").get("search");
-                if (searchResults != null && searchResults.isArray() && searchResults.size() > 0) {
-                    // Берем самую релевантную статью
-                    return searchResults.get(0).get("title").asText().replace(" ", "_");
+            // Opensearch возвращает массив вида: ["запрос", ["Заголовок1"], ["описание"], ["ссылка"]]
+            if (response != null && response.isArray() && response.size() > 1) {
+                JsonNode titles = response.get(1);
+                if (titles.isArray() && titles.size() > 0) {
+                    return titles.get(0).asText().replace(" ", "_");
                 }
             }
         } catch (Exception e) {

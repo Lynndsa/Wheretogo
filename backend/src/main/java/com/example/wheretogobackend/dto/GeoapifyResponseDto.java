@@ -27,7 +27,7 @@ public class GeoapifyResponseDto {
         private Double lon;
         private List<String> categories;
         private String website;
-        private String wiki; // Geoapify часто сразу дает тег/ссылку на Википедию
+        private String wiki;
         private Datasource datasource;
     }
 

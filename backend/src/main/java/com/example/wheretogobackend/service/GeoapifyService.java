@@ -35,7 +35,7 @@ public class GeoapifyService {
                         .queryParam("categories", categories)
                         .queryParam("filter", filter)
                         .queryParam("bias", bias)
-                        .queryParam("limit", 100)
+                        .queryParam("limit", 150)
                         .queryParam("apiKey", apiKey)
                         .build())
                 .retrieve()

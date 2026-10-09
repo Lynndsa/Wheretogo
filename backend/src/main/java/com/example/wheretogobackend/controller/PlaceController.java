@@ -19,7 +19,7 @@ public class PlaceController {
     public ResponseEntity<List<AttractionDto>> getNearbyPlaces(
             @RequestParam Double lat,
             @RequestParam Double lon,
-            @RequestParam(defaultValue = "3000") Double radius) {
+            @RequestParam(defaultValue = "10000") Double radius) {
         List<AttractionDto> places = attractionService.getNearbyPlaces(lat, lon, radius);
         return ResponseEntity.ok(places);
     }
