@@ -4,6 +4,8 @@ import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -46,7 +48,7 @@ class LoginActivity : AppCompatActivity() {
 
     }
 }
-@Preview
+
 @Composable
 fun LoginWindow(onRedistrationClick: () -> Unit) {
     var name by remember { mutableStateOf("") }
@@ -157,7 +159,13 @@ fun LoginWindow(onRedistrationClick: () -> Unit) {
         Text(
             text = "Нет аккаунта?\nЗарегистрируйтесь",
             textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onRedistrationClick
+                ),
             color = ButtonColor,
             fontSize = 15.sp,
             textDecoration = TextDecoration.Underline
