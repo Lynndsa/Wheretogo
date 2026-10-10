@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -10,6 +12,14 @@ android {
     compileSdk {
         version = release(37)
     }
+    buildFeatures {
+        buildConfig = true
+    }
+    val localProperties = Properties()
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localProperties.load(localPropertiesFile.inputStream())
+    }
 
     defaultConfig {
         applicationId = "com.example.wheretogo"
@@ -17,7 +27,8 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "1.0"
-
+        val apiKey = localProperties.getProperty("MAPTILER_API_KEY") ?: ""
+        buildConfigField("String", "MAPTILER_API_KEY", "\"$apiKey\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -57,8 +68,6 @@ dependencies {
     implementation(libs.material)
     implementation("androidx.compose.material:material-icons-extended")
 
-    // Яндекс Карты
-    implementation("com.yandex.android:maps.mobile:4.42.0-full")
 
     // MapLibre
     implementation("org.maplibre.gl:android-sdk:11.5.1")

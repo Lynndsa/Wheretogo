@@ -37,7 +37,7 @@ import com.example.wheretogo.ui.theme.ButtonColor
 import com.example.wheretogo.ui.theme.ButtonTextStyle
 import com.example.wheretogo.ui.theme.LinkTextStyle
 import com.example.wheretogo.ui.theme.primaryButtonColors
-import com.yandex.mapkit.MapKitFactory
+
 
 
 class MainActivity : ComponentActivity() {
@@ -45,14 +45,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                Box(
-                    modifier = Modifier.padding(innerPadding)
-                ) {
-                    val navController = rememberNavController()
-                    AppNavHost(navController = navController)
-                }
-            }
+//            Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+//                Box(
+//                    modifier = Modifier.padding(innerPadding)
+//                ) {
+//                    val navController = rememberNavController()
+//                    AppNavHost(navController = navController)
+//                }
+//            }
+            MapWindow()
         }
     }
 }
