@@ -90,10 +90,6 @@ public class AttractionService {
         return props.getWiki();
     }
 
-    private boolean isCyrillic(String text) {
-        return text.matches(".*[а-яА-ЯёЁ].*");
-    }
-
     private boolean isLatinOnly(String text) {
         return text.matches("^[a-zA-Z0-9\\s\\.\\-]+$");
     }
