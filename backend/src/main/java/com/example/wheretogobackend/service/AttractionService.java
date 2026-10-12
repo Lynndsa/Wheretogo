@@ -31,12 +31,6 @@ public class AttractionService {
             }
 
             String title = props.getName();
-
-            // Игнорируем слишком короткие названия на латинице (статуи/экспонаты типа "Rubens", "Smilis")
-            if (isLatinOnly(title)) {
-                continue;
-            }
-
             Double itemLat = props.getLat();
             Double itemLon = props.getLon();
 
