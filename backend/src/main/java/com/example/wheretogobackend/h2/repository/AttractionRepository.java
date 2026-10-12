@@ -1,6 +1,6 @@
-package com.example.wheretogobackend.repository;
+package com.example.wheretogobackend.h2.repository;
 
-import com.example.wheretogobackend.entity.Attraction;
+import com.example.wheretogobackend.h2.entity.Attraction;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
