@@ -1,4 +1,4 @@
-package com.example.wheretogobackend.entity;
+package com.example.wheretogobackend.h2.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;

@@ -31,12 +31,6 @@ public class AttractionService {
             }
 
             String title = props.getName();
-
-            // Игнорируем слишком короткие названия на латинице (статуи/экспонаты типа "Rubens", "Smilis")
-            if (isLatinOnly(title)) {
-                continue;
-            }
-
             Double itemLat = props.getLat();
             Double itemLon = props.getLon();
 
@@ -88,10 +82,6 @@ public class AttractionService {
             return props.getDatasource().getRaw().getWikipedia();
         }
         return props.getWiki();
-    }
-
-    private boolean isCyrillic(String text) {
-        return text.matches(".*[а-яА-ЯёЁ].*");
     }
 
     private boolean isLatinOnly(String text) {
