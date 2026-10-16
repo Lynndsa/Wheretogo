@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    id("org.jetbrains.kotlinx.kover") version "0.9.1"
 }
 
 android {
@@ -84,8 +85,18 @@ dependencies {
     implementation("androidx.room:room-ktx:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
 
+    // Network
+    implementation(platform("com.squareup.okhttp3:okhttp-bom:4.12.0"))
+    implementation("com.squareup.okhttp3:okhttp")
+    implementation("com.squareup.okhttp3:logging-interceptor")
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+
     // Tests
     testImplementation(libs.junit)
+    testImplementation("com.squareup.okhttp3:mockwebserver")          // версия берётся из okhttp-bom
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
 
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
@@ -94,4 +105,20 @@ dependencies {
 
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
+}
+kover {
+    reports {
+        filters {
+            includes {
+                classes(
+                    "com.example.wheretogo.validation.*",
+                    "com.example.wheretogo.tools.OfflineProgress",
+                    "com.example.wheretogo.network.*"
+                )
+            }
+        }
+        verify {
+            rule { minBound(80) }
+        }
+    }
 }
