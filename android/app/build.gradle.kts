@@ -71,7 +71,7 @@ dependencies {
 
 
     // MapLibre
-    implementation("org.maplibre.gl:android-sdk:11.5.1")
+    implementation("org.maplibre.gl:android-sdk:13.6.1")
 
     // Coil
     implementation("io.coil-kt:coil-compose:2.6.0")
