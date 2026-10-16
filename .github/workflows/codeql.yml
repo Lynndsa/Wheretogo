@@ -1,0 +1,30 @@
+name: CodeQL
+
+on:
+  pull_request:
+    branches: [ "main", "master" ]
+    paths: [ 'android/**' ]
+  push:
+    branches: [ "main", "master" ]
+    paths: [ 'android/**' ]
+  schedule:
+    - cron: '0 5 * * 1'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-android
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: java-kotlin
+          build-mode: manual
+      - name: Build for analysis
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+      - uses: github/codeql-action/analyze@v3

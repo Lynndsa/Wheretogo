@@ -48,9 +48,10 @@ class OfflineMapManager(private val context: Context) {
                     override fun onCreate(offlineRegion: OfflineRegion) {
                         offlineRegion.setObserver(object : OfflineRegion.OfflineRegionObserver {
                             override fun onStatusChanged(status: OfflineRegionStatus) {
-                                val percentage = if (status.requiredResourceCount > 0) {
-                                    (100.0 * status.completedResourceCount / status.requiredResourceCount).toInt()
-                                } else 0
+                                val percentage = OfflineProgress.percent(
+                                    status.completedResourceCount,
+                                    status.requiredResourceCount
+                                )
 
                                 onProgress(percentage)
 

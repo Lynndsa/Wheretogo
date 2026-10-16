@@ -1,0 +1,26 @@
+name: Setup Android build
+description: JDK 17, Gradle с кэшем и заглушка local.properties
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: temurin
+
+    - uses: gradle/actions/setup-gradle@v4
+      with:
+        build-root-directory: android
+
+    # Ключ нужен только чтобы собралось. Реальные ключи в CI не передаём.
+    - name: Create local.properties
+      shell: bash
+      working-directory: android
+      run: |
+        echo "MAPTILER_API_KEY=dummy_key_for_ci" > local.properties
+        echo "sdk.dir=$ANDROID_HOME" >> local.properties
+
+    - name: Grant execute permission for gradlew
+      shell: bash
+      working-directory: android
+      run: chmod +x gradlew
