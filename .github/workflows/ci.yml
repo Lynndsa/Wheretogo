@@ -34,7 +34,7 @@ jobs:
 
       # Любой упавший тест или недобор покрытия делает задание красным
       - name: Run unit tests with coverage
-        run: ./gradlew testDebugUnitTest koverXmlReportDebug koverHtmlReportDebug koverVerifyDebug --stacktrace
+        run: ./gradlew testDebugUnitTest koverXmlReport koverHtmlReport koverVerify --stacktrace
 
       - name: Publish test results
         if: always()
@@ -43,6 +43,7 @@ jobs:
         with:
           report_paths: 'android/app/build/test-results/testDebugUnitTest/*.xml'
           check_name: Результаты unit-тестов
+	  require_tests: true
 
       - name: Coverage summary
         if: always()
