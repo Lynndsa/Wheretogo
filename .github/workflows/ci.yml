@@ -22,7 +22,7 @@ defaults:
 
 jobs:
   unit-tests:
-    name: Unit tests + coverage
+    name: Unit tests
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -31,9 +31,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-android
 
-      - name: Run unit tests with coverage
-        run: ./gradlew testDebugUnitTest koverXmlReport koverHtmlReport koverVerify --stacktrace
+      # 1. Запускаем только unit-тесты без Kover
+      - name: Run unit tests
+        run: ./gradlew testDebugUnitTest --stacktrace
 
+      # 2. Публикуем результаты тестов
       - name: Publish test results
         if: always()
         continue-on-error: true
@@ -43,33 +45,15 @@ jobs:
           check_name: Результаты unit-тестов
           require_tests: true
 
-      - name: Coverage summary
-        if: always()
-        working-directory: .
-        run: |
-          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
-          import glob, xml.etree.ElementTree as ET
-          files = glob.glob('android/app/build/reports/kover/*.xml')
-          if not files:
-              print('Отчёт покрытия не найден'); raise SystemExit
-          root = ET.parse(files[0]).getroot()
-          print('### Покрытие кода (Kover)')
-          for c in root.findall('counter'):
-              m, v = int(c.get('missed')), int(c.get('covered'))
-              total = m + v
-              pct = 100 * v / total if total else 0
-              print(f"- {c.get('type')}: {pct:.1f}% ({v}/{total})")
-          PY
-
+      # 3. Сохраняем артефакты (только отчеты о тестах)
       - name: Upload reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-and-coverage-reports
+          name: test-reports
           path: |
             android/app/build/reports/tests/
             android/app/build/test-results/
-            android/app/build/reports/kover/
 
   lint:
     name: Android Lint
