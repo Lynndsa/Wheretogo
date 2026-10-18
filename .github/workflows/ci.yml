@@ -7,7 +7,6 @@ on:
   push:
     branches: [ "main", "master" ]
     paths: [ 'android/**', '.github/**' ]
-    tags: [ '0302-pz02-*' ]
   workflow_dispatch:
 
 concurrency:
@@ -32,7 +31,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-android
 
-      # Любой упавший тест или недобор покрытия делает задание красным
       - name: Run unit tests with coverage
         run: ./gradlew testDebugUnitTest koverXmlReport koverHtmlReport koverVerify --stacktrace
 
@@ -43,7 +41,7 @@ jobs:
         with:
           report_paths: 'android/app/build/test-results/testDebugUnitTest/*.xml'
           check_name: Результаты unit-тестов
-	  require_tests: true
+          require_tests: true
 
       - name: Coverage summary
         if: always()
@@ -112,20 +110,3 @@ jobs:
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  release:
-    name: Release for tag
-    if: github.ref_type == 'tag'
-    needs: [unit-tests, lint, build, secrets-scan]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: app-debug-apk
-          path: apk
-      - uses: softprops/action-gh-release@v2
-        with:
-          files: apk/*.apk
-          generate_release_notes: true
