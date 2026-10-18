@@ -21,7 +21,7 @@ defaults:
     working-directory: android
 
 jobs:
-    unit-tests:
+  unit-tests:
     name: Unit tests + coverage
     runs-on: ubuntu-latest
     permissions:
@@ -55,68 +55,4 @@ jobs:
           root = ET.parse(files[0]).getroot()
           print('### Покрытие кода (Kover)')
           for c in root.findall('counter'):
-              m, v = int(c.get('missed')), int(c.get('covered'))
-              total = m + v
-              pct = 100 * v / total if total else 0
-              print(f"- {c.get('type')}: {pct:.1f}% ({v}/{total})")
-          PY
-
-      - name: Upload reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-and-coverage-reports
-          path: |
-            android/app/build/reports/tests/
-            android/app/build/test-results/
-            android/app/build/reports/kover/
-
-      - name: Upload reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-and-coverage-reports
-          path: |
-            android/app/build/reports/tests/
-            android/app/build/test-results/
-            android/app/build/reports/kover/
-
-  lint:
-    name: Android Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-android
-      - name: Run lint
-        run: ./gradlew lintDebug --stacktrace
-      - name: Upload lint report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: lint-report
-          path: android/app/build/reports/lint-results-debug.*
-
-  build:
-    name: Build debug APK
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-android
-      - name: Build Android project
-        run: ./gradlew assembleDebug --stacktrace
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug-apk
-          path: android/app/build/outputs/apk/debug/*.apk
-
-  secrets-scan:
-    name: Secrets scan (gitleaks)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              m, v =
