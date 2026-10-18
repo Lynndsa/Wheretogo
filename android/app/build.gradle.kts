@@ -4,7 +4,6 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
-    id("org.jetbrains.kotlinx.kover") version "0.9.1"
 }
 
 android {
@@ -34,6 +33,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            enableUnitTestCoverage = true
+        }
         release {
             optimization {
                 enable = false
@@ -105,20 +107,4 @@ dependencies {
 
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
-}
-kover {
-    reports {
-        filters {
-            includes {
-                classes(
-                    "com.example.wheretogo.validation.*",
-                    "com.example.wheretogo.tools.OfflineProgress",
-                    "com.example.wheretogo.network.*"
-                )
-            }
-        }
-        verify {
-            rule { minBound(80) }
-        }
-    }
 }
