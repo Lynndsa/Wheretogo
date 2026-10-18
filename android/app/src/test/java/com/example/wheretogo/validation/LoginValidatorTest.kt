@@ -7,7 +7,7 @@ import org.junit.Test
 
 /** Таблица решений для правил L1 и L2. */
 class LoginValidatorTest {
-    @Test fun `имя и пароль заполненыd`() =
+    @Test fun `имя и пароль заполненыв`() =
         assertTrue(LoginValidator.validate("Иван", "pass").isValid)
 
     @Test fun `пустое имя`() =
