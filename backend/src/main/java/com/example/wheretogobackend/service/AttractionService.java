@@ -84,7 +84,4 @@ public class AttractionService {
         return props.getWiki();
     }
 
-    private boolean isLatinOnly(String text) {
-        return text.matches("^[a-zA-Z0-9\\s\\.\\-]+$");
-    }
 }

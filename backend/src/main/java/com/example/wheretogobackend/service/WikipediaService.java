@@ -9,6 +9,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -16,7 +17,19 @@ public class WikipediaService {
 
     private final WebClient webClient;
 
+    // Простейший кэш в памяти, чтобы не долбить Википедию повторно для уже проверенных мест
+    private final Map<String, Map<String, String>> cache = new ConcurrentHashMap<>();
+
     public Map<String, String> getWikiData(String wikiTag) {
+        if (wikiTag == null || wikiTag.isBlank()) {
+            return new HashMap<>();
+        }
+
+        // Если уже запрашивали — отдаем из кэша мгновенно без сетевых запросов
+        if (cache.containsKey(wikiTag)) {
+            return cache.get(wikiTag);
+        }
+
         Map<String, String> result = new HashMap<>();
         try {
             String lang = "ru";
@@ -37,15 +50,23 @@ public class WikipediaService {
             String formattedTitle = cleanTitle.replace(" ", "_");
             result = fetchSummary(lang, formattedTitle);
 
-            // 3. ФОЛЛБЭК: Если 404 (например, "А. С. Пушкину" или "Флора Фарнезская"),
-            // делаем ПОИСК в Википедии, чтобы найти статьи в именительном падеже
+            // 3. ФОЛЛБЭК: Если статья не найдена напрямую, делаем ПОИСК
             if (result.isEmpty()) {
+                // ПАУЗА перед поисковым запросом, чтобы не схватить 429 Too Many Requests
+                Thread.sleep(350);
+
                 String searchTitle = searchArticleTitle(lang, cleanTitle);
                 if (searchTitle != null) {
                     result = fetchSummary(lang, searchTitle);
                 }
             }
 
+            // Сохраняем в кэш результат (даже если он пустой, чтобы повторно не стучаться)
+            cache.put(wikiTag, result);
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.err.println("Поток был прерван при запросе Wikipedia: " + e.getMessage());
         } catch (Exception e) {
             System.err.println("Ошибка загрузки Wikipedia для " + wikiTag + ": " + e.getMessage());
         }
@@ -71,17 +92,15 @@ public class WikipediaService {
                 result.put("wikiUrl", String.format("https://%s.wikipedia.org/wiki/%s", lang, pageTitle));
             }
         } catch (Exception ignored) {
-            // Игнорируем 404, чтобы отработал Search API
+
         }
         return result;
     }
 
     private String searchArticleTitle(String lang, String query) {
         try {
-            // Очищаем запрос от слов "музей", "памятник", если они мешают, или ищем строгим opensearch
             String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
 
-            // Используем opensearch — он ищет ТОЛЬКО по заголовкам статей, а не по всему тексту
             String searchUrl = String.format(
                     "https://%s.wikipedia.org/w/api.php?action=opensearch&search=%s&limit=1&namespace=0&format=json",
                     lang, encodedQuery
@@ -94,7 +113,6 @@ public class WikipediaService {
                     .bodyToMono(JsonNode.class)
                     .block();
 
-            // Opensearch возвращает массив вида: ["запрос", ["Заголовок1"], ["описание"], ["ссылка"]]
             if (response != null && response.isArray() && response.size() > 1) {
                 JsonNode titles = response.get(1);
                 if (titles.isArray() && titles.size() > 0) {
