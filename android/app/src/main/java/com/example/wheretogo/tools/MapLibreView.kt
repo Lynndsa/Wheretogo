@@ -52,25 +52,25 @@ fun MapLibreView(
                     .zoom(initialZoom)
                     .build()
 
-                val markerToPlaceMap = mutableMapOf<Marker, PlaceItem>()
-                places.forEach { place ->
-                    val marker = map.addMarker(
-                        MarkerOptions()
-                            .position(place.latLng)
-                            .title(place.title)
-                            .snippet(place.description)
-                    )
-                    if (marker != null) {
-                        markerToPlaceMap[marker] = place
-                    }
-                }
-
-                map.setOnMarkerClickListener { marker ->
-                    markerToPlaceMap[marker]?.let { place ->
-                        onPlaceClick(place)
-                        true
-                    } ?: false
-                }
+//                val markerToPlaceMap = mutableMapOf<Marker, PlaceItem>()
+//                places.forEach { place ->
+//                    val marker = map.addMarker(
+//                        MarkerOptions()
+//                            .position(place.latLng)
+//                            .title(place.title)
+//                            .snippet(place.description)
+//                    )
+//                    if (marker != null) {
+//                        markerToPlaceMap[marker] = place
+//                    }
+//                }
+//
+//                map.setOnMarkerClickListener { marker ->
+//                    markerToPlaceMap[marker]?.let { place ->
+//                        onPlaceClick(place)
+//                        true
+//                    } ?: false
+//                }
             }
         }
     }
