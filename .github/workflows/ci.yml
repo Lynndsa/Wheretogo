@@ -48,7 +48,7 @@ jobs:
       # 3. Сохраняем артефакты (только отчеты о тестах)
       - name: Upload reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-reports
           path: |
@@ -65,7 +65,7 @@ jobs:
         run: ./gradlew lintDebug --stacktrace
       - name: Upload lint report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lint-report
           path: android/app/build/reports/lint-results-debug.*
@@ -79,7 +79,7 @@ jobs:
       - name: Build Android project
         run: ./gradlew assembleDebug --stacktrace
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: app-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
