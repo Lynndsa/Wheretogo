@@ -39,7 +39,7 @@ jobs:
       - name: Publish test results
         if: always()
         continue-on-error: true
-        uses: mikepenz/action-junit-report@v5
+        uses: mikepenz/action-junit-report@v6
         with:
           report_paths: 'android/app/build/test-results/testDebugUnitTest/*.xml'
           check_name: Результаты unit-тестов
