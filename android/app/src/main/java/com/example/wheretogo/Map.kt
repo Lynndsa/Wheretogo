@@ -10,6 +10,8 @@ import com.example.wheretogo.tools.MapLibreView
 import org.maplibre.android.geometry.LatLng
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import com.example.wheretogo.model.PlaceItem
+import com.example.wheretogo.network.RetrofitClient
 
 import com.example.wheretogo.tools.OfflineMapManager // Твой менеджер из пакета tools
 import kotlinx.coroutines.Dispatchers
@@ -23,7 +25,7 @@ import org.maplibre.android.geometry.LatLngBounds
 fun MapScreen() {
     val context = LocalContext.current
     val mapTilerStyleUrl = "https://api.maptiler.com/maps/base-v4/style.json?key=${BuildConfig.MAPTILER_API_KEY}"
-
+    var places by remember { mutableStateOf<List<PlaceItem>>(emptyList()) }
     val offlineMapManager = remember { OfflineMapManager(context) }
 
 
@@ -44,11 +46,24 @@ fun MapScreen() {
             )
         }
     }
+    LaunchedEffect(Unit) {
+        try {
+            val api = RetrofitClient.createApi("https://wheretogo-00tp.onrender.com/")
+            val response = api.getNearbyPlaces(lat = 59.9386, lon = 30.3141, radius = 5000)
+            if (response.isSuccessful) {
+                places = response.body().orEmpty()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
     MapLibreView(
         modifier = Modifier.fillMaxSize(),
         styleUrl = mapTilerStyleUrl,
         initialCenter = LatLng(59.9386, 30.3141),
-        initialZoom = 11.0
+        initialZoom = 11.0,
+        places = places,
+        onPlaceClick = { place -> /* показать bottom sheet и т.п. */ }
     )
 
 
