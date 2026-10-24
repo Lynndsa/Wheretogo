@@ -17,4 +17,7 @@ interface ApiService {
         @Query("lon") lon: Double,
         @Query("radius") radius: Int
     ): Response<List<PlaceItem>>
+
+    @GET("api/v1/custom-places")
+    suspend fun getAllPlaceDB(): Response<List<PlaceItem>>
 }
