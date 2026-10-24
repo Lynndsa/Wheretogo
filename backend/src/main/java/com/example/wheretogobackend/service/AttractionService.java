@@ -53,11 +53,9 @@ public class AttractionService {
                     wikipediaUrl = wikiData.get("wikiUrl");
                 }
             }
-            // В AttractionService.java:
             if (description == null) {
-                continue; // Пропускаем мелкие точки и заведения без статьи в Википедии
+                continue;
             }
-
 
             AttractionDto dto = AttractionDto.builder()
                     .title(title)

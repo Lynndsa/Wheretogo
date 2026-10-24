@@ -4,12 +4,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-
+import java.util.Map;
+import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+
+
 
 @Service
 @RequiredArgsConstructor
@@ -17,20 +20,15 @@ public class WikipediaService {
 
     private final WebClient webClient;
 
-    // Простейший кэш в памяти, чтобы не долбить Википедию повторно для уже проверенных мест
-    private final Map<String, Map<String, String>> cache = new ConcurrentHashMap<>();
+
 
     public Map<String, String> getWikiData(String wikiTag) {
-        if (wikiTag == null || wikiTag.isBlank()) {
-            return new HashMap<>();
-        }
-
-        // Если уже запрашивали — отдаем из кэша мгновенно без сетевых запросов
-        if (cache.containsKey(wikiTag)) {
-            return cache.get(wikiTag);
-        }
-
         Map<String, String> result = new HashMap<>();
+
+        if (wikiTag == null || wikiTag.isBlank()) {
+            return result;
+        }
+
         try {
             String lang = "ru";
             String title = wikiTag;
@@ -41,37 +39,29 @@ public class WikipediaService {
                 title = parts[1];
             }
 
-            // 1. Очищаем имя от неразрывных пробелов (\u00A0) и скрытых символов
-            String cleanTitle = title.replace("\u00A0", " ")
+            String cleanTitle = title
+                    .replace("\u00A0", " ")
                     .replace("\u200B", "")
                     .trim();
 
-            // 2. Пробуем прямое получение статьи
-            String formattedTitle = cleanTitle.replace(" ", "_");
-            result = fetchSummary(lang, formattedTitle);
-
-            // 3. ФОЛЛБЭК: Если статья не найдена напрямую, делаем ПОИСК
-            if (result.isEmpty()) {
-                // ПАУЗА перед поисковым запросом, чтобы не схватить 429 Too Many Requests
-                Thread.sleep(350);
-
-                String searchTitle = searchArticleTitle(lang, cleanTitle);
-                if (searchTitle != null) {
-                    result = fetchSummary(lang, searchTitle);
-                }
+            if (cleanTitle.isEmpty()) {
+                return result;
             }
 
-            // Сохраняем в кэш результат (даже если он пустой, чтобы повторно не стучаться)
-            cache.put(wikiTag, result);
+            String formattedTitle = cleanTitle.replace(" ", "_");
 
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            System.err.println("Поток был прерван при запросе Wikipedia: " + e.getMessage());
+            result = fetchSummary(lang, formattedTitle);
+
         } catch (Exception e) {
-            System.err.println("Ошибка загрузки Wikipedia для " + wikiTag + ": " + e.getMessage());
+            System.err.println(
+                    "Ошибка загрузки Wikipedia для "
+                            + wikiTag + ": " + e.getMessage()
+            );
         }
+
         return result;
     }
+
 
     private Map<String, String> fetchSummary(String lang, String pageTitle) {
         Map<String, String> result = new HashMap<>();
@@ -99,8 +89,10 @@ public class WikipediaService {
 
     private String searchArticleTitle(String lang, String query) {
         try {
+            // Очищаем запрос от слов "музей", "памятник", если они мешают, или ищем строгим opensearch
             String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
 
+            // Используем opensearch — он ищет ТОЛЬКО по заголовкам статей, а не по всему тексту
             String searchUrl = String.format(
                     "https://%s.wikipedia.org/w/api.php?action=opensearch&search=%s&limit=1&namespace=0&format=json",
                     lang, encodedQuery
@@ -113,6 +105,7 @@ public class WikipediaService {
                     .bodyToMono(JsonNode.class)
                     .block();
 
+            // Opensearch возвращает массив вида: ["запрос", ["Заголовок1"], ["описание"], ["ссылка"]]
             if (response != null && response.isArray() && response.size() > 1) {
                 JsonNode titles = response.get(1);
                 if (titles.isArray() && titles.size() > 0) {
