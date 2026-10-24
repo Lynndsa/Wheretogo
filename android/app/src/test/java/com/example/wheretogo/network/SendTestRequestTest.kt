@@ -24,7 +24,7 @@ class SendTestRequestTest {
     fun readParsedJson(): Unit = runBlocking {
         val api = RetrofitClient.createApi("https://wheretogo-00tp.onrender.com/")
 
-        val response = api.getNearbyPlaces(lat = 59.9343, lon = 30.3351, radius = 1)
+        val response = api.getNearbyPlaces(lat = 59.9343, lon = 30.3351, radius = 1000)
         var count = 0
         if (response.isSuccessful) {
 
