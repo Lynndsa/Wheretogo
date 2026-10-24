@@ -22,9 +22,9 @@ object RetrofitClient {
             )
         }
         .addInterceptor(loggingInterceptor)
-        .connectTimeout(60, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
-        .writeTimeout(60, TimeUnit.SECONDS)
+        .connectTimeout(200, TimeUnit.SECONDS)
+        .readTimeout(200, TimeUnit.SECONDS)
+        .writeTimeout(200, TimeUnit.SECONDS)
         .build()
 
     /** Фабрика с подменяемым адресом: в тестах сюда подставляется MockWebServer. */

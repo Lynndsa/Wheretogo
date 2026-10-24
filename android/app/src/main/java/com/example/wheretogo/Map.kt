@@ -1,5 +1,6 @@
 package com.example.wheretogo
 
+import android.util.Log
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -49,12 +50,14 @@ fun MapScreen() {
     LaunchedEffect(Unit) {
         try {
             val api = RetrofitClient.createApi("https://wheretogo-00tp.onrender.com/")
-            val response = api.getNearbyPlaces(lat = 59.9386, lon = 30.3141, radius = 5000)
+//            val response = api.getNearbyPlaces(lat = 59.9386, lon = 30.3141, radius = 5000)
+            val response = api.getAllPlaceDB()
+            Log.d("MAP", "Код: ${response.code()}, мест: ${response.body()?.size}")
             if (response.isSuccessful) {
                 places = response.body().orEmpty()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("MAP", "Ошибка загрузки мест", e)
         }
     }
     MapLibreView(

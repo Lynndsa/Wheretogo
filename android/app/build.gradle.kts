@@ -70,6 +70,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.material)
     implementation("androidx.compose.material:material-icons-extended")
+    implementation(libs.play.services.maps)
 
 
     // MapLibre
