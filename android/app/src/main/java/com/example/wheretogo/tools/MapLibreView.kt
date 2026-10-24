@@ -1,6 +1,7 @@
 package com.example.wheretogo.tools
 
 import android.util.Log
+import android.util.Property
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -21,19 +22,20 @@ import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
+import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.layers.CircleLayer
-import org.maplibre.android.style.layers.PropertyFactory.circleColor
-import org.maplibre.android.style.layers.PropertyFactory.circleRadius
-import org.maplibre.android.style.layers.PropertyFactory.circleStrokeColor
-import org.maplibre.android.style.layers.PropertyFactory.circleStrokeWidth
+import org.maplibre.android.style.layers.PropertyFactory.*
+import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.Point
+import org.maplibre.android.style.layers.Property.*
 
 private const val PLACES_SOURCE = "places-source"
 private const val PLACES_LAYER = "places-layer"
 
+private const val LABELS_LAYER = "places-labels-layer"
 @Composable
 fun MapLibreView(
     modifier: Modifier = Modifier,
@@ -74,6 +76,19 @@ fun MapLibreView(
                             circleStrokeColor("#FFFFFF")
                         )
                     )
+                    style.addLayer(
+                        SymbolLayer(LABELS_LAYER, PLACES_SOURCE).withProperties(
+                            textField(Expression.get("title")),
+                            textSize(12f),
+                            textColor("#212121"),
+                            textHaloColor("#FFFFFF"),
+                            textHaloWidth(1.5f),
+                            textAnchor(TEXT_ANCHOR_TOP),
+                            textOffset(arrayOf(0f, 1f)),
+                            textAllowOverlap(true),
+                            textIgnorePlacement(true)
+                        )
+                    )
                     styleReady = true
                 }
             }
@@ -107,6 +122,10 @@ fun MapLibreView(
 
             Feature.fromGeometry(Point.fromLngLat(lon, lat)).apply {
                 addNumberProperty("index", index)
+            }
+            Feature.fromGeometry(Point.fromLngLat(lon, lat)).apply {
+                addNumberProperty("index", index)
+                addStringProperty("title", p.title ?: "")
             }
         }
 
