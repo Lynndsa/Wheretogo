@@ -6,6 +6,7 @@ import lombok.Data;
 @Data
 @Builder
 public class AttractionDto {
+
     private String title;
     private String description;
     private String address;

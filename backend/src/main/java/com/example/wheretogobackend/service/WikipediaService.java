@@ -20,8 +20,6 @@ public class WikipediaService {
 
     private final WebClient webClient;
 
-
-
     public Map<String, String> getWikiData(String wikiTag) {
         Map<String, String> result = new HashMap<>();
 
