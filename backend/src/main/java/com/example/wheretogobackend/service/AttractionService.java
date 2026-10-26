@@ -150,4 +150,41 @@ public class AttractionService {
         return combinedList;
     }
 
+    public AttractionDto getPlaceByCoordinates(Double lat, Double lon) {
+        // Сначала пробуем найти точное или близкое совпадение в нашей базе данных
+        // (можно использовать небольшую погрешность или метод репозитория, если координаты хранятся с высокой точностью)
+        List<DataEntity> allPlaces = dataRepository.findAll();
+
+        for (DataEntity place : allPlaces) {
+            // Проверяем совпадение с погрешностью, например, в несколько метров
+            if (Math.abs(place.getLatitude() - lat) < 0.0001 && Math.abs(place.getLongitude() - lon) < 0.0001) {
+
+                // Если нашли в БД, подтягиваем Википедию для полноты картины (как вы делали в стриме)
+                Map<String, String> wikiData = wikipediaService.getWikiData(place.getName());
+                String finalDescription = (wikiData.get("description") != null && !wikiData.get("description").isBlank())
+                        ? wikiData.get("description")
+                        : place.getDescription();
+
+                String finalImage = (wikiData.get("imageUrl") != null && !wikiData.get("imageUrl").isBlank())
+                        ? wikiData.get("imageUrl")
+                        : place.getImageUrl();
+
+                return AttractionDto.builder()
+                        .title(place.getName())
+                        .address(place.getAddress())
+                        .latitude(place.getLatitude())
+                        .longitude(place.getLongitude())
+                        .category(place.getCategory())
+                        .description(finalDescription != null ? finalDescription : "Описание отсутствует")
+                        .imageUrl(finalImage)
+                        .websiteUrl(place.getWebsiteUrl())
+                        .wikipediaUrl(wikiData.get("wikiUrl"))
+                        .build();
+            }
+        }
+
+        // Если в базе не нашлось, можно сделать запрос к внешнему API или вернуть null / исключение
+        return null;
+    }
+
 }

@@ -25,4 +25,18 @@ public class PlaceController {
 
         return placeService.getAllNearbyPlaces(lat, lon, radius);
     }
+
+    @GetMapping("/details")
+    public ResponseEntity<AttractionDto> getPlaceDetails(
+            @RequestParam double lat,
+            @RequestParam double lon
+    ) {
+        AttractionDto attraction = placeService.getPlaceByCoordinates(lat, lon);
+
+        if (attraction == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(attraction);
+    }
 }
