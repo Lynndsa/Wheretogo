@@ -2,6 +2,7 @@ package com.example.wheretogobackend.controller;
 
 import com.example.wheretogobackend.dto.AttractionDto;
 import com.example.wheretogobackend.service.AttractionService;
+import com.example.wheretogobackend.service.WikipediaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,14 +14,29 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PlaceController {
 
-    private final AttractionService attractionService;
+    private final AttractionService placeService;
 
     @GetMapping("/nearby")
-    public ResponseEntity<List<AttractionDto>> getNearbyPlaces(
-            @RequestParam Double lat,
-            @RequestParam Double lon,
-            @RequestParam Double radius) {
-        List<AttractionDto> places = attractionService.getNearbyPlaces(lat, lon, radius);
-        return ResponseEntity.ok(places);
+    public List<AttractionDto> getNearbyPlaces(
+            @RequestParam double lat,
+            @RequestParam double lon,
+            @RequestParam double radius
+    ) {
+
+        return placeService.getAllNearbyPlaces(lat, lon, radius);
+    }
+
+    @GetMapping("/details")
+    public ResponseEntity<AttractionDto> getPlaceDetails(
+            @RequestParam double lat,
+            @RequestParam double lon
+    ) {
+        AttractionDto attraction = placeService.getPlaceByCoordinates(lat, lon);
+
+        if (attraction == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(attraction);
     }
 }
