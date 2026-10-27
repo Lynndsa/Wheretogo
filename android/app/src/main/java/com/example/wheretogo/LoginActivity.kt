@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -29,6 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -38,6 +40,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.wheretogo.model.LoginViewModel
 import com.example.wheretogo.ui.theme.BackgroundColor
 import com.example.wheretogo.ui.theme.ButtonColor
 
@@ -50,7 +54,11 @@ class LoginActivity : AppCompatActivity() {
 }
 
 @Composable
-fun LoginWindow(onRedistrationClick: () -> Unit) {
+fun LoginWindow(
+    onRedistrationClick: () -> Unit,
+    onLoginSuccess: () -> Unit,
+    viewModel: LoginViewModel = viewModel()
+) {
     var name by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -114,6 +122,7 @@ fun LoginWindow(onRedistrationClick: () -> Unit) {
                     fontWeight = FontWeight.Bold
                 )
             },
+
             shape = RoundedCornerShape(50.dp),
             modifier = Modifier
                 .fillMaxWidth(),
@@ -138,21 +147,39 @@ fun LoginWindow(onRedistrationClick: () -> Unit) {
                 }
             }
         )
+        viewModel.error?.let {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = it,
+                color = Color.Red,
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
         Spacer(modifier = Modifier.height(300.dp))
         Button(
-            onClick = {  },
+            onClick = { viewModel.login(name, password, onLoginSuccess) },
+            enabled = !viewModel.isLoading,
             modifier = Modifier
                 .padding(start = 30.dp, end = 30.dp)
                 .fillMaxWidth()
                 .height(60.dp),
             colors = ButtonDefaults.buttonColors(ButtonColor),
-
-            ) {
-            Text(text = "Войти",
-                color = BackgroundColor,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
-            )
+        ) {
+            if (viewModel.isLoading) {
+                CircularProgressIndicator(
+                    color = BackgroundColor,
+                    modifier = Modifier.height(24.dp)
+                )
+            } else {
+                Text(
+                    text = "Войти",
+                    color = BackgroundColor,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
         Spacer(modifier = Modifier.height(10.dp))
 

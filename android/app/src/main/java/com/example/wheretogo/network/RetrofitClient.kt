@@ -4,17 +4,20 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.converter.scalars.ScalarsConverterFactory
+import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
-    // 10.0.2.2 — адрес хостового компьютера для эмулятора Android
-    private const val BASE_URL = "http://10.0.2.2:8080/"
+    private const val BASE_URL = "https://wheretogo-00tp.onrender.com/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BODY
+        level = HttpLoggingInterceptor.Level.BASIC
     }
 
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(loggingInterceptor)
+        .connectTimeout(60, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
         .build()
 
     /** Фабрика с подменяемым адресом: в тестах сюда подставляется MockWebServer. */
@@ -22,6 +25,7 @@ object RetrofitClient {
         Retrofit.Builder()
             .baseUrl(baseUrl)
             .client(client)
+            .addConverterFactory(ScalarsConverterFactory.create()) // строго перед Gson
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(ApiService::class.java)
