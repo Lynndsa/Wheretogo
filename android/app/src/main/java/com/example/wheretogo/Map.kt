@@ -1,7 +1,9 @@
 package com.example.wheretogo
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
+import android.location.LocationManager
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -17,6 +19,8 @@ import com.example.wheretogo.network.RetrofitClient
 import com.example.wheretogo.tools.MapLibreView
 import com.example.wheretogo.tools.OfflineMapManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.geometry.LatLngBounds
@@ -35,6 +39,9 @@ fun MapScreen() {
     }
 
     val context = LocalContext.current
+
+    // Центр экрана карты
+    var currentMapCenter by remember { mutableStateOf<LatLng?>(null) }
 
     // Проверка текущего статуса разрешения геолокации
     var isLocationGranted by remember {
@@ -92,16 +99,28 @@ fun MapScreen() {
         }
     }
 
-    LaunchedEffect(Unit) {
-        try {
-            val api = RetrofitClient.createApi("https://wheretogo-00tp.onrender.com/")
-            val response = api.getAllPlaceDB()
-            Log.d("MAP", "Код: ${response.code()}, мест: ${response.body()?.size}")
-            if (response.isSuccessful) {
-                places = response.body().orEmpty()
+    // Динамическая загрузка мест вокруг центра экрана каждые 5 секунд
+    LaunchedEffect(isLocationGranted, currentMapCenter) {
+        while (isActive) {
+            val center = currentMapCenter ?: if (isLocationGranted) {
+                val (lat, lon) = getDeviceLocation(context)
+                LatLng(lat, lon)
+            } else {
+                LatLng(59.9386, 30.3141) // По умолчанию СПб
             }
-        } catch (e: Exception) {
-            Log.e("MAP", "Ошибка загрузки мест", e)
+
+            try {
+                val api = RetrofitClient.createApi("https://wheretogo-00tp.onrender.com/")
+                val response = api.getNearbyPlaces(lat = center.latitude, lon = center.longitude, radius = 5000)
+                Log.d("MAP", "Код: ${response.code()}, мест в радиусе 5км от (${center.latitude}, ${center.longitude}): ${response.body()?.size}")
+                if (response.isSuccessful) {
+                    places = response.body().orEmpty()
+                }
+            } catch (e: Exception) {
+                Log.e("MAP", "Ошибка загрузки мест каждые 5 сек", e)
+            }
+
+            delay(5000)
         }
     }
 
@@ -112,6 +131,38 @@ fun MapScreen() {
         initialZoom = 11.0,
         places = places,
         isLocationGranted = isLocationGranted,
+        onCameraCenterChanged = { newCenter ->
+            currentMapCenter = newCenter
+        },
         onPlaceClick = { place -> /* показать bottom sheet и т.п. */ }
     )
+}
+
+private suspend fun getDeviceLocation(context: Context): Pair<Double, Double> {
+    return withContext(Dispatchers.IO) {
+        try {
+            val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+            val hasFine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+            val hasCoarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+            if ((hasFine || hasCoarse) && locationManager != null) {
+                val gpsLoc = if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                    try { locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER) } catch (e: SecurityException) { null }
+                } else null
+
+                val netLoc = if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                    try { locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER) } catch (e: SecurityException) { null }
+                } else null
+
+                val loc = gpsLoc ?: netLoc
+                if (loc != null) {
+                    Log.d("MAP", "Получена геопозиция пользователя: ${loc.latitude}, ${loc.longitude}")
+                    return@withContext Pair(loc.latitude, loc.longitude)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("MAP", "Ошибка получения геопозиции", e)
+        }
+        Pair(59.9386, 30.3141)
+    }
 }
