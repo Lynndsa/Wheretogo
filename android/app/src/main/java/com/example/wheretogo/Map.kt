@@ -24,6 +24,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.geometry.LatLngBounds
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -120,7 +121,7 @@ fun MapScreen() {
                 Log.e("MAP", "Ошибка загрузки мест каждые 5 сек", e)
             }
 
-            delay(5000)
+            delay(5000.milliseconds)
         }
     }
 
