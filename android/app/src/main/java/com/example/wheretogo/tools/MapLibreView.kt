@@ -56,6 +56,7 @@ fun MapLibreView(
     initialCenter: LatLng = LatLng(59.9386, 30.3141),
     initialZoom: Double = 11.0,
     isLocationGranted: Boolean = false,
+    onCameraCenterChanged: (LatLng) -> Unit = {},
     onPlaceClick: (PlaceItem) -> Unit = {}
 ) {
     if (LocalInspectionMode.current) {
@@ -170,6 +171,19 @@ fun MapLibreView(
                 places.getOrNull(index)?.let(onPlaceClick)
                 true
             } else false
+        }
+    }
+
+    // Отслеживание перемещения центра карты пользователем
+    LaunchedEffect(styleReady) {
+        val m = map ?: return@LaunchedEffect
+        if (!styleReady) return@LaunchedEffect
+
+        m.addOnCameraIdleListener {
+            val center = m.cameraPosition.target
+            if (center != null) {
+                onCameraCenterChanged(center)
+            }
         }
     }
 
