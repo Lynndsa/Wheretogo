@@ -10,4 +10,7 @@ interface ApiService {
 
     @POST("api/auth/login")
     suspend fun login(@Body request: LoginRequest): Response<String>
+
+    @POST("api/auth/register")
+    suspend fun register(@Body request: RegisterRequest): Response<String>
 }
