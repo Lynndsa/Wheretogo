@@ -1,5 +1,7 @@
+
 package com.example.wheretogo.model
 
+import org.json.JSONObject
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -14,23 +16,72 @@ class LoginViewModel : ViewModel() {
 
     var isLoading by mutableStateOf(false)
         private set
+
+    var loginError by mutableStateOf<String?>(null)
+        private set
+
+    var passwordError by mutableStateOf<String?>(null)
+        private set
+
     var error by mutableStateOf<String?>(null)
         private set
 
-    fun login(login: String, password: String, onSuccess: () -> Unit) {
-        if (login.isBlank() || password.isBlank()) {
-            error = "Введите имя и пароль"
+    fun login(
+        login: String,
+        password: String,
+        onSuccess: () -> Unit
+    ) {
+        loginError = if (login.isBlank()) "Введите имя" else null
+        passwordError = if (password.isBlank()) "Введите пароль" else null
+        error = null
+
+        if (loginError != null || passwordError != null) {
             return
         }
+
         viewModelScope.launch {
             isLoading = true
-            error = null
+
             try {
-                val response = RetrofitClient.apiService.login(LoginRequest(login.trim(), password))
+                val response = RetrofitClient.apiService.login(
+                    LoginRequest(login.trim(), password)
+                )
+
                 when {
                     response.isSuccessful -> onSuccess()
-                    response.code() == 401 -> error = "Неверный логин или пароль"
-                    else -> error = "Ошибка сервера (${response.code()})"
+                    else -> {
+                        val responseBody = response.errorBody()?.string()
+
+                        val code = try {
+                            JSONObject(responseBody ?: "{}").optString("code")
+                        } catch (e: Exception) {
+                            ""
+                        }
+
+                        val message = try {
+                            JSONObject(responseBody ?: "{}").optString("message")
+                        } catch (e: Exception) {
+                            ""
+                        }
+
+                        when (code) {
+                            "LOGIN_NOT_EXIST" ->
+                                loginError = message.ifBlank { "Пользователь с таким логином не найде" }
+
+                            "PASSWORD_EXIST" ->
+                                passwordError = message.ifBlank {
+                                    "Пароль указан не верно"
+                                }
+
+                            else ->
+                                error = message.ifBlank {
+                                    "Ошибка сервера (${response.code()})"
+                                }
+
+                        }
+
+
+                    }
                 }
             } catch (e: IOException) {
                 error = "Нет соединения с сервером"
@@ -40,5 +91,15 @@ class LoginViewModel : ViewModel() {
                 isLoading = false
             }
         }
+    }
+
+    fun onLoginChanged(value: String) {
+        loginError = null
+        error = null
+    }
+
+    fun onPasswordChanged(value: String) {
+        passwordError = null
+        error = null
     }
 }
