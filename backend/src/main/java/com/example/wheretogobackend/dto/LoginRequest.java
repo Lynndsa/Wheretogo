@@ -1,20 +1,23 @@
 package com.example.wheretogobackend.dto;
 
+import jakarta.validation.constraints.NotBlank;
+
 public class LoginRequest {
+
+    @NotBlank(message = "Введите имя")
     private String login;
+
+    @NotBlank(message = "Введите пароль")
     private String password;
 
-    // Пустой конструктор нужен Spring для десериализации JSON
     public LoginRequest() {
     }
 
-    // Конструктор со всеми полями (если понадобится)
     public LoginRequest(String login, String password) {
         this.login = login;
         this.password = password;
     }
 
-    // Геттеры и сеттеры
     public String getLogin() {
         return login;
     }
