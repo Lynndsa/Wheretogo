@@ -12,10 +12,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -26,9 +29,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.wheretogo.model.RegisterViewModel
 import com.example.wheretogo.ui.theme.AppDimens
 import com.example.wheretogo.ui.theme.BackgroundColor
 import com.example.wheretogo.ui.theme.ButtonTextStyle
@@ -37,6 +45,7 @@ import com.example.wheretogo.ui.theme.LinkTextStyle
 import com.example.wheretogo.ui.theme.TextHeadStyle
 import com.example.wheretogo.ui.theme.TextLabelStyle
 import com.example.wheretogo.ui.theme.customTextFieldColors
+import com.example.wheretogo.ui.theme.exceptionTypeErrorStyle
 import com.example.wheretogo.ui.theme.primaryButtonColors
 
 class RegistrationActivity : AppCompatActivity() {
@@ -46,8 +55,12 @@ class RegistrationActivity : AppCompatActivity() {
 
     }
 }
-    @Composable
-    fun RegistrationWindow(onLoginClick: () -> Unit) {
+@Composable
+fun RegistrationWindow(
+    onLoginClick: () -> Unit,
+    onRegisterSuccess: () -> Unit,
+    viewModel: RegisterViewModel = viewModel()
+) {
         var name by remember { mutableStateOf("") }
         var number by remember { mutableStateOf("") }
         var email by remember { mutableStateOf("") }
@@ -59,6 +72,7 @@ class RegistrationActivity : AppCompatActivity() {
             modifier = Modifier
                 .fillMaxSize()
                 .background(BackgroundColor)
+                .verticalScroll(rememberScrollState())
                 .padding(
                     top = AppDimens.ScreenPaddingTop,
                     start = AppDimens.ScreenPaddingHorizontal,
@@ -75,34 +89,56 @@ class RegistrationActivity : AppCompatActivity() {
 
             OutlinedTextField(
                 value = name,
-                onValueChange = { name = it },
+                onValueChange = { name = it; viewModel.onLoginChanged(it) },
                 label = { Text("Имя", style = TextLabelStyle) },
                 shape = InputFieldShape,
                 modifier = Modifier.fillMaxWidth(),
                 colors = customTextFieldColors()
             )
+            viewModel.loginError?.let {
+                Text(
+                    text = it,
+                    style = exceptionTypeErrorStyle,
+                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                )
+            }
 
             Spacer(modifier = Modifier.height(AppDimens.FieldSpacing))
 
             OutlinedTextField(
                 value = number,
-                onValueChange = { number = it },
+                onValueChange = { number = it; viewModel.onPhoneChanged(it) },
                 label = { Text("Номер телефона", style = TextLabelStyle) },
                 shape = InputFieldShape,
                 modifier = Modifier.fillMaxWidth(),
                 colors = customTextFieldColors()
             )
+            viewModel.phoneError?.let {
+                Text(
+                    text = it,
+                    style = exceptionTypeErrorStyle,
+                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                )
+            }
 
             Spacer(modifier = Modifier.height(AppDimens.FieldSpacing))
 
             OutlinedTextField(
                 value = email,
-                onValueChange = { email = it },
+                onValueChange = { email = it; viewModel.oEmailChanged(it) },
                 label = { Text("Почта", style = TextLabelStyle) },
                 shape = InputFieldShape,
                 modifier = Modifier.fillMaxWidth(),
                 colors = customTextFieldColors()
             )
+
+            viewModel.emailError?.let {
+                Text(
+                    text = it,
+                    style = exceptionTypeErrorStyle,
+                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                )
+            }
 
             Spacer(modifier = Modifier.height(AppDimens.FieldSpacing))
 
@@ -118,7 +154,7 @@ class RegistrationActivity : AppCompatActivity() {
 
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = { password = it; viewModel.onPasswordChanged(it)  },
                 label = { Text("Пароль", style = TextLabelStyle) },
                 shape = InputFieldShape,
                 modifier = Modifier.fillMaxWidth(),
@@ -127,11 +163,19 @@ class RegistrationActivity : AppCompatActivity() {
                 trailingIcon = passwordIcon
             )
 
+            viewModel.passwordError?.let {
+                Text(
+                    text = it,
+                    style = exceptionTypeErrorStyle,
+                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                )
+            }
+
             Spacer(modifier = Modifier.height(AppDimens.FieldSpacing))
 
             OutlinedTextField(
                 value = confirmPassword,
-                onValueChange = { confirmPassword = it },
+                onValueChange = { confirmPassword = it; viewModel.onPasswordConfirmChanged(it) },
                 label = { Text("Повторите пароль", style = TextLabelStyle) },
                 shape = InputFieldShape,
                 modifier = Modifier.fillMaxWidth(),
@@ -139,18 +183,46 @@ class RegistrationActivity : AppCompatActivity() {
                 colors = customTextFieldColors(),
                 trailingIcon = passwordIcon
             )
+            viewModel.confirmPasswordError?.let {
+                Text(
+                    text = it,
+                    style = exceptionTypeErrorStyle,
+                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                )
+            }
+
+            viewModel.error?.let {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = it,
+                    style = exceptionTypeErrorStyle,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
 
             Spacer(modifier = Modifier.height(AppDimens.ButtonTopSpacer))
 
             Button(
-                onClick = { },
+                onClick = {
+                    viewModel.register(name, phone = number, email, password, confirmPassword, onRegisterSuccess)
+                },
                 modifier = Modifier
                     .padding(horizontal = AppDimens.ButtonHorizontalPadding)
                     .fillMaxWidth()
                     .height(AppDimens.ButtonHeight),
                 colors = primaryButtonColors()
             ) {
-                Text(text = "Зарегистрироваться", style = ButtonTextStyle)
+                if( viewModel.isLoading){
+                    CircularProgressIndicator(
+                        color = BackgroundColor,
+                        modifier = Modifier.height(24.dp)
+                    )
+                } else {
+                    Text(text = "Зарегистрироваться",
+                        style = ButtonTextStyle)
+                }
             }
 
             Spacer(modifier = Modifier.height(AppDimens.LinkTopSpacer))

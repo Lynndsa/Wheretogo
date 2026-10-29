@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -44,6 +46,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.wheretogo.model.LoginViewModel
 import com.example.wheretogo.ui.theme.BackgroundColor
 import com.example.wheretogo.ui.theme.ButtonColor
+import com.example.wheretogo.ui.theme.ButtonTextStyle
+import com.example.wheretogo.ui.theme.LinkTextStyle
+
+import com.example.wheretogo.ui.theme.exceptionTypeErrorStyle
 
 class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -67,6 +73,7 @@ fun LoginWindow(
         modifier = Modifier
             .fillMaxSize()
             .background(BackgroundColor)
+            .verticalScroll(rememberScrollState())
             .padding(top = 50.dp, start = 5.dp, end = 5.dp)
 
     ) {
@@ -85,7 +92,8 @@ fun LoginWindow(
 
         OutlinedTextField(
             value = name,
-            onValueChange = { name = it },
+            onValueChange = { name = it; viewModel.onLoginChanged(it) },
+            isError = viewModel.loginError != null,
             label = {
                 Text(
                     "Имя",
@@ -106,13 +114,24 @@ fun LoginWindow(
             )
         )
 
+        viewModel.loginError?.let { errorText ->
+            Text(
+                text = errorText,
+                style = exceptionTypeErrorStyle,
+                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+            )
+        }
+
+
         Spacer(modifier = Modifier.height(16.dp))
 
 
 
         OutlinedTextField(
             value = password,
-            onValueChange = { password = it },
+            onValueChange = {     password = it
+                viewModel.onPasswordChanged(it) },
+            isError = viewModel.passwordError != null,
             label = {
                 Text(
                     "Пароль",
@@ -147,17 +166,25 @@ fun LoginWindow(
                 }
             }
         )
+        viewModel.passwordError?.let {
+            Text(
+                text = it,
+                style = exceptionTypeErrorStyle,
+                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(300.dp))
+
         viewModel.error?.let {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = it,
-                color = Color.Red,
-                fontSize = 14.sp,
+                style = exceptionTypeErrorStyle,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
         }
-        Spacer(modifier = Modifier.height(300.dp))
+
         Button(
             onClick = { viewModel.login(name, password, onLoginSuccess) },
             enabled = !viewModel.isLoading,
@@ -175,9 +202,7 @@ fun LoginWindow(
             } else {
                 Text(
                     text = "Войти",
-                    color = BackgroundColor,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
+                    style = ButtonTextStyle
                 )
             }
         }
@@ -185,7 +210,7 @@ fun LoginWindow(
 
         Text(
             text = "Нет аккаунта?\nЗарегистрируйтесь",
-            textAlign = TextAlign.Center,
+            style = LinkTextStyle,
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(
@@ -193,9 +218,6 @@ fun LoginWindow(
                     indication = null,
                     onClick = onRedistrationClick
                 ),
-            color = ButtonColor,
-            fontSize = 15.sp,
-            textDecoration = TextDecoration.Underline
         )
 
 
