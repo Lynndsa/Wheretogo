@@ -8,7 +8,7 @@ import retrofit2.converter.scalars.ScalarsConverterFactory
 import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
-    private const val BASE_URL = "https://wheretogo-00tp.onrender.com/"
+    private const val BASE_URL = "http://127.0.0.1:8080/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BASIC
