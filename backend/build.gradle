@@ -32,6 +32,10 @@ dependencies {
     //Security
     implementation 'org.springframework.security:spring-security-crypto'
 
+    //
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+
+
     // Lombok
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
