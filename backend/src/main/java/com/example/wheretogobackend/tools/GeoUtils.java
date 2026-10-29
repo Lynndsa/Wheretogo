@@ -1,5 +1,9 @@
 package com.example.wheretogobackend.tools;
 
+import org.springframework.context.annotation.Bean;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 public class GeoUtils {
 
     public static double calculateDistanceInMeters(double lat1, double lon1, double lat2, double lon2) {
