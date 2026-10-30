@@ -109,9 +109,9 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
 
 
-    implementation("com.squareup.retrofit2:retrofit:2.11.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
-    implementation("com.squareup.retrofit2:converter-scalars:2.11.0")
+    implementation("com.squareup.retrofit2:retrofit:3.0.0")
+    implementation("com.squareup.retrofit2:converter-gson:3.0.0")
+    implementation("com.squareup.retrofit2:converter-scalars:3.0.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
 
 }
