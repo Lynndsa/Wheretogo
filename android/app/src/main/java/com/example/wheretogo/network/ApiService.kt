@@ -20,7 +20,6 @@ interface ApiService {
 
     @GET("api/v1/custom-places")
     suspend fun getAllPlaceDB(): Response<List<PlaceItem>>
-
     @POST("api/auth/login")
     suspend fun login(@Body request: LoginRequest): Response<String>
 
