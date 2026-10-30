@@ -125,7 +125,7 @@ fun RegistrationWindow(
 
             OutlinedTextField(
                 value = email,
-                onValueChange = { email = it; viewModel.oEmailChanged(it) },
+                onValueChange = { email = it; viewModel.onEmailChanged(it) },
                 label = { Text("Почта", style = TextLabelStyle) },
                 shape = InputFieldShape,
                 modifier = Modifier.fillMaxWidth(),

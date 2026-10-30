@@ -1,6 +1,7 @@
 
 package com.example.wheretogobackend.exception;
 
+import com.example.wheretogobackend.exception.RegistrationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -15,21 +16,25 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleRegistrationException(
             RegistrationException ex) {
 
-        HttpStatus status = HttpStatus.BAD_REQUEST;
+        String code = ex.getCode();
 
-        if ("LOGIN_EXISTS".equals(ex.getCode())
-                || "EMAIL_EXISTS".equals(ex.getCode())
-                || "PHONE_EXISTS".equals(ex.getCode())) {
-            status = HttpStatus.CONFLICT;
-        }
-        else if ("LOGIN_NOT_EXIST".equals(ex.getCode())
-                || "PASSWORD_EXIST".equals(ex.getCode())) {
-            status = HttpStatus.UNAUTHORIZED;
-        }
+        HttpStatus status = switch (code) {
+            case "LOGIN_EXISTS",
+                 "EMAIL_EXISTS",
+                 "PHONE_EXISTS",
+                 "LOGIN_ERROR",
+                 "EMAIL_ERROR",
+                 "PHONE_ERROR" -> HttpStatus.CONFLICT;
+
+            case "LOGIN_NOT_EXIST",
+                 "PASSWORD_EXIST" -> HttpStatus.UNAUTHORIZED;
+
+            default -> HttpStatus.BAD_REQUEST;
+        };
 
         return ResponseEntity.status(status)
                 .body(Map.of(
-                        "code", ex.getCode(),
+                        "code", code,
                         "message", ex.getMessage()
                 ));
     }

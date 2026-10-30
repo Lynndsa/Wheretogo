@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -22,23 +24,18 @@ public class AuthController {
     // Вход
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        try {
-            boolean isAuthenticated = userService.checkPassword(
-                    request.getLogin(),
-                    request.getPassword()
-            );
 
-            if (isAuthenticated) {
-                return ResponseEntity.ok("Вход успешно выполнен!");
-            }
+        boolean isAuthenticated = userService.checkPassword(
+                request.getLogin(),
+                request.getPassword()
+        );
 
-            return ResponseEntity.badRequest()
-                    .body("Ошибка авторизации");
-
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(e.getMessage());
+        if (isAuthenticated) {
+            return ResponseEntity.ok("Вход успешно выполнен!");
         }
+
+        return ResponseEntity.badRequest()
+                .body("Ошибка авторизации");
     }
 
     // Регистрация
@@ -48,10 +45,15 @@ public class AuthController {
             BindingResult bindingResult) {
 
         if (bindingResult.hasErrors()) {
+            String message = bindingResult.getFieldErrors()
+                    .get(0)
+                    .getDefaultMessage();
+
             return ResponseEntity.badRequest()
-                    .body(bindingResult.getFieldErrors()
-                            .get(0)
-                            .getDefaultMessage());
+                    .body(Map.of(
+                            "code", "VALIDATION_ERROR",
+                            "message", message
+                    ));
         }
 
         registerService.register(request);
