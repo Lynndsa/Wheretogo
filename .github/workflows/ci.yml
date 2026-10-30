@@ -3,10 +3,10 @@ name: CI Checks
 on:
   pull_request:
     branches: [ "main", "master" ]
-    paths: [ 'android/**', '.github/**' ]
+    paths: [ 'android/**', '.github/**', 'backend/**' ]
   push:
     branches: [ "main", "master" ]
-    paths: [ 'android/**', '.github/**' ]
+    paths: [ 'android/**', '.github/**', 'backend/**' ]
   workflow_dispatch:
 
 concurrency:
@@ -16,10 +16,6 @@ concurrency:
 permissions:
   contents: read
 
-defaults:
-  run:
-    working-directory: android
-
 jobs:
   unit-tests:
     name: Unit tests
@@ -28,18 +24,19 @@ jobs:
       contents: read
       checks: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-android
 
       # 1. Запускаем только unit-тесты без Kover
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest --stacktrace
+        working-directory: ./android
 
       # 2. Публикуем результаты тестов
       - name: Publish test results
         if: always()
         continue-on-error: true
-        uses: mikepenz/action-junit-report@v5
+        uses: mikepenz/action-junit-report@v6
         with:
           report_paths: 'android/app/build/test-results/testDebugUnitTest/*.xml'
           check_name: Результаты unit-тестов
@@ -48,7 +45,7 @@ jobs:
       # 3. Сохраняем артефакты (только отчеты о тестах)
       - name: Upload reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-reports
           path: |
@@ -59,13 +56,14 @@ jobs:
     name: Android Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-android
       - name: Run lint
         run: ./gradlew lintDebug --stacktrace
+        working-directory: ./android
       - name: Upload lint report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lint-report
           path: android/app/build/reports/lint-results-debug.*
@@ -74,23 +72,53 @@ jobs:
     name: Build debug APK
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-android
       - name: Build Android project
         run: ./gradlew assembleDebug --stacktrace
+        working-directory: ./android
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: app-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
+
+  build-backend:
+    name: Build Backend (Gradle)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+        working-directory: ./backend
+
+      - name: Build backend with Gradle
+        run: ./gradlew build --stacktrace
+        working-directory: ./backend
+
+      - name: Upload backend build reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build-reports
+          path: backend/build/reports/
 
   secrets-scan:
     name: Secrets scan (gitleaks)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v2
+      - uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

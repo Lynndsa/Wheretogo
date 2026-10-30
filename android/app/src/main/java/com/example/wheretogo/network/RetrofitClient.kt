@@ -10,7 +10,7 @@ object RetrofitClient {
     private const val BASE_URL = "https://wheretogo-00tp.onrender.com/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BODY
+        level = HttpLoggingInterceptor.Level.BASIC
     }
 
     private val okHttpClient = OkHttpClient.Builder()
@@ -32,11 +32,10 @@ object RetrofitClient {
         Retrofit.Builder()
             .baseUrl(baseUrl)
             .client(client)
+            .addConverterFactory(ScalarsConverterFactory.create()) // строго перед Gson
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(ApiService::class.java)
 
     val apiService: ApiService by lazy { createApi(BASE_URL) }
-
 }
-

@@ -4,11 +4,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-
+import java.util.Map;
+import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+
+
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +22,11 @@ public class WikipediaService {
 
     public Map<String, String> getWikiData(String wikiTag) {
         Map<String, String> result = new HashMap<>();
+
+        if (wikiTag == null || wikiTag.isBlank()) {
+            return result;
+        }
+
         try {
             String lang = "ru";
             String title = wikiTag;
@@ -28,29 +37,29 @@ public class WikipediaService {
                 title = parts[1];
             }
 
-            // 1. Очищаем имя от неразрывных пробелов (\u00A0) и скрытых символов
-            String cleanTitle = title.replace("\u00A0", " ")
+            String cleanTitle = title
+                    .replace("\u00A0", " ")
                     .replace("\u200B", "")
                     .trim();
 
-            // 2. Пробуем прямое получение статьи
-            String formattedTitle = cleanTitle.replace(" ", "_");
-            result = fetchSummary(lang, formattedTitle);
-
-            // 3. ФОЛЛБЭК: Если 404 (например, "А. С. Пушкину" или "Флора Фарнезская"),
-            // делаем ПОИСК в Википедии, чтобы найти статьи в именительном падеже
-            if (result.isEmpty()) {
-                String searchTitle = searchArticleTitle(lang, cleanTitle);
-                if (searchTitle != null) {
-                    result = fetchSummary(lang, searchTitle);
-                }
+            if (cleanTitle.isEmpty()) {
+                return result;
             }
 
+            String formattedTitle = cleanTitle.replace(" ", "_");
+
+            result = fetchSummary(lang, formattedTitle);
+
         } catch (Exception e) {
-            System.err.println("Ошибка загрузки Wikipedia для " + wikiTag + ": " + e.getMessage());
+            System.err.println(
+                    "Ошибка загрузки Wikipedia для "
+                            + wikiTag + ": " + e.getMessage()
+            );
         }
+
         return result;
     }
+
 
     private Map<String, String> fetchSummary(String lang, String pageTitle) {
         Map<String, String> result = new HashMap<>();
@@ -71,7 +80,7 @@ public class WikipediaService {
                 result.put("wikiUrl", String.format("https://%s.wikipedia.org/wiki/%s", lang, pageTitle));
             }
         } catch (Exception ignored) {
-            // Игнорируем 404, чтобы отработал Search API
+
         }
         return result;
     }

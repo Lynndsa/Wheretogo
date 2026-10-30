@@ -12,12 +12,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -29,6 +32,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -38,8 +42,14 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.wheretogo.model.LoginViewModel
 import com.example.wheretogo.ui.theme.BackgroundColor
 import com.example.wheretogo.ui.theme.ButtonColor
+import com.example.wheretogo.ui.theme.ButtonTextStyle
+import com.example.wheretogo.ui.theme.LinkTextStyle
+
+import com.example.wheretogo.ui.theme.exceptionTypeErrorStyle
 
 class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,7 +60,11 @@ class LoginActivity : AppCompatActivity() {
 }
 
 @Composable
-fun LoginWindow(onRedistrationClick: () -> Unit) {
+fun LoginWindow(
+    onRedistrationClick: () -> Unit,
+    onLoginSuccess: () -> Unit,
+    viewModel: LoginViewModel = viewModel()
+) {
     var name by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -59,6 +73,7 @@ fun LoginWindow(onRedistrationClick: () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .background(BackgroundColor)
+            .verticalScroll(rememberScrollState())
             .padding(top = 50.dp, start = 5.dp, end = 5.dp)
 
     ) {
@@ -77,7 +92,8 @@ fun LoginWindow(onRedistrationClick: () -> Unit) {
 
         OutlinedTextField(
             value = name,
-            onValueChange = { name = it },
+            onValueChange = { name = it; viewModel.onLoginChanged(it) },
+            isError = viewModel.loginError != null,
             label = {
                 Text(
                     "Имя",
@@ -98,13 +114,24 @@ fun LoginWindow(onRedistrationClick: () -> Unit) {
             )
         )
 
+        viewModel.loginError?.let { errorText ->
+            Text(
+                text = errorText,
+                style = exceptionTypeErrorStyle,
+                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+            )
+        }
+
+
         Spacer(modifier = Modifier.height(16.dp))
 
 
 
         OutlinedTextField(
             value = password,
-            onValueChange = { password = it },
+            onValueChange = {     password = it
+                viewModel.onPasswordChanged(it) },
+            isError = viewModel.passwordError != null,
             label = {
                 Text(
                     "Пароль",
@@ -114,6 +141,7 @@ fun LoginWindow(onRedistrationClick: () -> Unit) {
                     fontWeight = FontWeight.Bold
                 )
             },
+
             shape = RoundedCornerShape(50.dp),
             modifier = Modifier
                 .fillMaxWidth(),
@@ -138,27 +166,51 @@ fun LoginWindow(onRedistrationClick: () -> Unit) {
                 }
             }
         )
+        viewModel.passwordError?.let {
+            Text(
+                text = it,
+                style = exceptionTypeErrorStyle,
+                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+            )
+        }
         Spacer(modifier = Modifier.height(300.dp))
+
+        viewModel.error?.let {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = it,
+                style = exceptionTypeErrorStyle,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
         Button(
-            onClick = {  },
+            onClick = { viewModel.login(name, password, onLoginSuccess) },
+            enabled = !viewModel.isLoading,
             modifier = Modifier
                 .padding(start = 30.dp, end = 30.dp)
                 .fillMaxWidth()
                 .height(60.dp),
             colors = ButtonDefaults.buttonColors(ButtonColor),
-
-            ) {
-            Text(text = "Войти",
-                color = BackgroundColor,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
-            )
+        ) {
+            if (viewModel.isLoading) {
+                CircularProgressIndicator(
+                    color = BackgroundColor,
+                    modifier = Modifier.height(24.dp)
+                )
+            } else {
+                Text(
+                    text = "Войти",
+                    style = ButtonTextStyle
+                )
+            }
         }
         Spacer(modifier = Modifier.height(10.dp))
 
         Text(
             text = "Нет аккаунта?\nЗарегистрируйтесь",
-            textAlign = TextAlign.Center,
+            style = LinkTextStyle,
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(
@@ -166,9 +218,6 @@ fun LoginWindow(onRedistrationClick: () -> Unit) {
                     indication = null,
                     onClick = onRedistrationClick
                 ),
-            color = ButtonColor,
-            fontSize = 15.sp,
-            textDecoration = TextDecoration.Underline
         )
 
 
