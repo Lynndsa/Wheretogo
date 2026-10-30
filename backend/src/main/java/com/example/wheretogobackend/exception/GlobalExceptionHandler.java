@@ -22,7 +22,8 @@ public class GlobalExceptionHandler {
                 || "PHONE_EXISTS".equals(ex.getCode())) {
             status = HttpStatus.CONFLICT;
         }
-        else if ("LOGIN_ERROR".equals(ex.getCode())) {
+        else if ("LOGIN_NOT_EXIST".equals(ex.getCode())
+                || "PASSWORD_EXIST".equals(ex.getCode())) {
             status = HttpStatus.UNAUTHORIZED;
         }
 
