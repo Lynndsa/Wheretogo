@@ -7,4 +7,10 @@ import retrofit2.http.POST
 interface ApiService {
     @POST("api/test")
     suspend fun sendTestData(@Body request: TestRequest): Response<TestResponse>
+
+    @POST("api/auth/login")
+    suspend fun login(@Body request: LoginRequest): Response<String>
+
+    @POST("api/auth/register")
+    suspend fun register(@Body request: RegisterRequest): Response<String>
 }

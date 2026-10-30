@@ -17,17 +17,34 @@ fun AppNavHost(
         startDestination = Destination.Main.route,
     ) {
         composable(route = Destination.Registration.route) {
-            RegistrationWindow(onLoginClick = { navController.navigate(Destination.Login.route) })
+            RegistrationWindow(
+                onLoginClick = { navController.navigate(Destination.Login.route) },
+                onRegisterSuccess = {
+                    // после регистрации ведём на вход и убираем экран регистрации из истории
+                    navController.navigate(Destination.Login.route) {
+                        popUpTo(Destination.Registration.route) { inclusive = true }
+                    }
+                }
+            )
         }
-        composable(route = Destination.Login.route) {
-            LoginWindow(onRedistrationClick = {
-                navController.navigate(Destination.Registration.route) })
 
+        composable(route = Destination.Login.route) {
+            LoginWindow(
+                onRedistrationClick = { navController.navigate(Destination.Registration.route) },
+                onLoginSuccess = {
+                    // TODO: поставь сюда свой экран после входа
+                    navController.navigate(Destination.Main.route) {
+                        popUpTo(Destination.Main.route) { inclusive = true }
+                    }
+                }
+            )
         }
+
         composable(route = Destination.Main.route) {
             Greeting(
                 onLoginClick = { navController.navigate(Destination.Login.route) },
-                onGuestClick = { navController.navigate(Destination.Registration.route) })
+                onGuestClick = { navController.navigate(Destination.Registration.route) }
+            )
         }
     }
 }
