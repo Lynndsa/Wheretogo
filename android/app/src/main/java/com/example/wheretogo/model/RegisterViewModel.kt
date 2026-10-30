@@ -8,10 +8,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.wheretogo.network.RegisterRequest
 import com.example.wheretogo.network.RetrofitClient
-import org.json.JSONObject
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import java.io.IOException
-import kotlin.String
 
 class RegisterViewModel : ViewModel() {
 
@@ -26,8 +25,10 @@ class RegisterViewModel : ViewModel() {
 
     var phoneError by mutableStateOf<String?>(null)
         private set
+
     var emailError by mutableStateOf<String?>(null)
         private set
+
     var passwordError by mutableStateOf<String?>(null)
         private set
 
@@ -43,125 +44,167 @@ class RegisterViewModel : ViewModel() {
         confirmPassword: String,
         onSuccess: () -> Unit
     ) {
-        loginError = when {
-            (name.isBlank()) -> "Введите имя"
-            (name.length > 20) -> "Имя слишком длинное"
-            (name.length < 3) -> "Имя слишком короткое"
-            (name.contains(Regex("""\d"""))) -> "Имя не может состоять из цифр"
 
+        // Проверка имени
+        loginError = when {
+            name.isBlank() -> "Введите имя"
+            name.length > 20 -> "Имя слишком длинное"
+            name.length < 3 -> "Имя слишком короткое"
+            name.any { it.isDigit() } -> "Имя не может содержать цифры"
             else -> null
         }
+
+        // Проверка телефона
         phoneError = when {
-            (phone.length != 11) -> "Некорректный номер телефона"
-            (phone.isBlank()) -> "Введите номер телефона"
-            !Patterns.PHONE.matcher(phone.trim()).matches() -> "Некорректно указан номер"
-            (phone.contains(Regex("""\p{L}"""))) -> "Телефон не может состоять из букв"
+            phone.isBlank() -> "Введите номер телефона"
+            phone.length != 11 -> "Некорректный номер телефона"
+            !Patterns.PHONE.matcher(phone.trim()).matches() ->
+                "Некорректно указан номер"
             else -> null
         }
+
+        // Проверка почты
         emailError = when {
             email.isBlank() -> "Введите почту"
+            email.length > 150 -> "Почта слишком длинная"
             !Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches() ->
                 "Некорректная почта"
-            email.length > 150 -> "Почта слишком длинная"
             else -> null
         }
-        passwordError = when{
+
+        // Проверка пароля
+        passwordError = when {
+            password.isBlank() -> "Введите пароль"
             password.length < 8 -> "Пароль слишком короткий"
             password.length > 20 -> "Пароль слишком длинный"
-            (password.isBlank()) -> "Введите пароль"
-            (!password.contains(Regex("""[A-ZА-ЯЁ]"""))) -> "Пароль должен содержать заглавную букву"
-            (!password.contains(Regex("""[a-zа-яё]"""))) -> "Пароль должен содержать строчную букву"
-            (!password.contains(Regex("""\d"""))) -> "Пароль должен содержать цифру"
-            (!password.contains(Regex("""[!@#$%^&*()_+\-=\[\]{};':",.<>?/\\|~`]"""))) -> "Пароль должен содержать спецсимвол"
+            !password.contains(Regex("""[A-ZА-ЯЁ]""")) ->
+                "Пароль должен содержать заглавную букву"
+            !password.contains(Regex("""[a-zа-яё]""")) ->
+                "Пароль должен содержать строчную букву"
+            !password.contains(Regex("""\d""")) ->
+                "Пароль должен содержать цифру"
+            !password.contains(
+                Regex("""[!@#$%^&*()_+\-=\[\]{};':",.<>?/\\|~`]""")
+            ) -> "Пароль должен содержать спецсимвол"
             else -> null
         }
-        confirmPasswordError =
-            if (confirmPassword.isBlank()) "Подтвердите пароль" else null
+
+        // Подтверждение пароля
+        confirmPasswordError = when {
+            confirmPassword.isBlank() -> "Подтвердите пароль"
+            password != confirmPassword -> "Пароли не совпадают"
+            else -> null
+        }
 
         error = null
 
-        if (password.isNotBlank() && confirmPassword.isNotBlank()
-            && password != confirmPassword
-        ) {
-            confirmPasswordError = "Пароли не совпадают"
-        }
-
+        // Если есть ошибки — запрос не отправляем
         if (
             loginError != null ||
             phoneError != null ||
             emailError != null ||
             passwordError != null ||
             confirmPasswordError != null
-        ) return
+        ) {
+            return
+        }
 
         viewModelScope.launch {
             isLoading = true
 
             try {
                 val response = RetrofitClient.apiService.register(
-                    RegisterRequest(name, phone, email, password, confirmPassword)
+                    RegisterRequest(
+                        name,
+                        phone,
+                        email,
+                        password,
+                        confirmPassword
+                    )
                 )
 
-                when {
-                    response.isSuccessful -> onSuccess()
+                if (response.isSuccessful) {
+                    onSuccess()
+                } else {
 
-                    else -> {
-                        val responseBody = response.errorBody()?.string()
+                    // Читаем тело ответа только один раз
+                    val responseBody = response.errorBody()?.string().orEmpty()
 
-                        android.util.Log.e(
-                            "REGISTER",
-                            "HTTP ${response.code()}: $responseBody"
-                        )
+                    android.util.Log.e(
+                        "REGISTER",
+                        "HTTP ${response.code()}: $responseBody"
+                    )
 
+                    val json = try {
+                        JSONObject(responseBody)
+                    } catch (e: Exception) {
+                        JSONObject()
+                    }
 
-                        val code = try {
-                            JSONObject(responseBody ?: "{}").optString("code")
-                        } catch (e: Exception) {
-                            ""
+                    val code = json.optString("code")
+                    val message = json.optString("message")
+
+                    when (code) {
+
+                        "LOGIN_ERROR",
+                        "LOGIN_EXISTS" -> {
+                            loginError = message.ifBlank {
+                                "Это имя уже занято"
+                            }
                         }
 
-                        val message = try {
-                            JSONObject(responseBody ?: "{}").optString("message")
-                        } catch (e: Exception) {
-                            ""
+                        "EMAIL_ERROR",
+                        "EMAIL_EXISTS" -> {
+                            emailError = message.ifBlank {
+                                "Эта почта уже зарегистрирована"
+                            }
                         }
 
-                        when (code) {
-                            "LOGIN_ERROR" ->
-                                loginError = message.ifBlank { "Это имя уже занято" }
+                        "PHONE_ERROR",
+                        "PHONE_EXISTS" -> {
+                            phoneError = message.ifBlank {
+                                "Этот номер уже зарегистрирован"
+                            }
+                        }
 
-                            "EMAIL_ERROR" ->
-                                emailError = message.ifBlank {
-                                    "Эта почта уже зарегистрирована"
-                                }
+                        "PASSWORD_ERROR",
+                        "PASSWORD_MISMATCH" -> {
+                            confirmPasswordError = message.ifBlank {
+                                "Пароли не совпадают"
+                            }
+                        }
 
-                            "PHONE_ERROR" ->
-                                phoneError = message.ifBlank {
-                                    "Этот номер уже зарегистрирован"
-                                }
+                        "VALIDATION_ERROR" -> {
+                            error = message.ifBlank {
+                                "Проверьте правильность введённых данных"
+                            }
+                        }
 
-                            "PASSWORD_ERROR" ->
-                                confirmPasswordError = message.ifBlank {
-                                    "Пароли не совпадают"
-                                }
-
-                            else ->
-                                error = message.ifBlank {
-                                    "Ошибка сервера (${response.code()})"
-                                }
+                        else -> {
+                            error = message.ifBlank {
+                                "Ошибка сервера (${response.code()})"
+                            }
                         }
                     }
                 }
 
             } catch (e: IOException) {
                 error = "Нет соединения с сервером"
+
             } catch (e: Exception) {
+                android.util.Log.e(
+                    "REGISTER",
+                    "Ошибка регистрации",
+                    e
+                )
                 error = "Что-то пошло не так"
+
             } finally {
                 isLoading = false
             }
         }
     }
+
 
     fun onLoginChanged(value: String) {
         loginError = null
@@ -172,12 +215,13 @@ class RegisterViewModel : ViewModel() {
         passwordError = null
         error = null
     }
+
     fun onPhoneChanged(value: String) {
         phoneError = null
         error = null
     }
 
-    fun oEmailChanged(value: String) {
+    fun onEmailChanged(value: String) {
         emailError = null
         error = null
     }
@@ -187,4 +231,3 @@ class RegisterViewModel : ViewModel() {
         error = null
     }
 }
-

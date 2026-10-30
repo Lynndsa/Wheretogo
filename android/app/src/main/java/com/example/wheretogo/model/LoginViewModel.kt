@@ -1,7 +1,6 @@
 
 package com.example.wheretogo.model
 
-import org.json.JSONObject
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -10,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.wheretogo.network.LoginRequest
 import com.example.wheretogo.network.RetrofitClient
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import java.io.IOException
 
 class LoginViewModel : ViewModel() {
@@ -26,13 +26,26 @@ class LoginViewModel : ViewModel() {
     var error by mutableStateOf<String?>(null)
         private set
 
+
     fun login(
         login: String,
         password: String,
         onSuccess: () -> Unit
     ) {
-        loginError = if (login.isBlank()) "Введите имя" else null
-        passwordError = if (password.isBlank()) "Введите пароль" else null
+
+        // Локальная проверка полей
+        loginError = if (login.isBlank()) {
+            "Введите имя"
+        } else {
+            null
+        }
+
+        passwordError = if (password.isBlank()) {
+            "Введите пароль"
+        } else {
+            null
+        }
+
         error = null
 
         if (loginError != null || passwordError != null) {
@@ -44,54 +57,73 @@ class LoginViewModel : ViewModel() {
 
             try {
                 val response = RetrofitClient.apiService.login(
-                    LoginRequest(login.trim(), password)
+                    LoginRequest(
+                        login.trim(),
+                        password
+                    )
                 )
 
-                when {
-                    response.isSuccessful -> onSuccess()
-                    else -> {
-                        val responseBody = response.errorBody()?.string()
+                if (response.isSuccessful) {
+                    onSuccess()
+                } else {
 
-                        val code = try {
-                            JSONObject(responseBody ?: "{}").optString("code")
-                        } catch (e: Exception) {
-                            ""
+                    // Читаем тело ответа только один раз
+                    val responseBody =
+                        response.errorBody()?.string().orEmpty()
+
+                    android.util.Log.e(
+                        "LOGIN_ERROR",
+                        "HTTP ${response.code()}: $responseBody"
+                    )
+
+                    val json = try {
+                        JSONObject(responseBody)
+                    } catch (e: Exception) {
+                        JSONObject()
+                    }
+
+                    val code = json.optString("code")
+                    val message = json.optString("message")
+
+                    when (code) {
+
+                        "LOGIN_NOT_EXIST" -> {
+                            loginError = message.ifBlank {
+                                "Пользователь с таким логином не найден"
+                            }
                         }
 
-                        val message = try {
-                            JSONObject(responseBody ?: "{}").optString("message")
-                        } catch (e: Exception) {
-                            ""
+                        "PASSWORD_EXIST" -> {
+                            passwordError = message.ifBlank {
+                                "Неверный пароль"
+                            }
                         }
 
-                        when (code) {
-                            "LOGIN_NOT_EXIST" ->
-                                loginError = message.ifBlank { "Пользователь с таким логином не найде" }
-
-                            "PASSWORD_EXIST" ->
-                                passwordError = message.ifBlank {
-                                    "Пароль указан не верно"
-                                }
-
-                            else ->
-                                error = message.ifBlank {
-                                    "Ошибка сервера (${response.code()})"
-                                }
-
+                        else -> {
+                            error = message.ifBlank {
+                                "Ошибка сервера (${response.code()})"
+                            }
                         }
-
-
                     }
                 }
+
             } catch (e: IOException) {
                 error = "Нет соединения с сервером"
+
             } catch (e: Exception) {
+                android.util.Log.e(
+                    "LOGIN_ERROR",
+                    "Ошибка входа",
+                    e
+                )
                 error = "Что-то пошло не так"
+
             } finally {
                 isLoading = false
             }
         }
     }
+
 
     fun onLoginChanged(value: String) {
         loginError = null
