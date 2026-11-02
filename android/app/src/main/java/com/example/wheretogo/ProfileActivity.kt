@@ -1,0 +1,215 @@
+package com.example.wheretogo
+
+import android.os.Bundle
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import com.example.wheretogo.ui.theme.AppDimens
+import com.example.wheretogo.ui.theme.BackgroundColor
+import com.example.wheretogo.ui.theme.ButtonColor
+import com.example.wheretogo.ui.theme.ButtonTextStyle
+import com.example.wheretogo.ui.theme.InputFieldShape
+import com.example.wheretogo.ui.theme.LinkTextStyle
+import com.example.wheretogo.ui.theme.TextHeadStyle
+import com.example.wheretogo.ui.theme.TextLabelStyle
+import com.example.wheretogo.ui.theme.WhereToGoTheme
+import com.example.wheretogo.ui.theme.customTextFieldColors
+import com.example.wheretogo.ui.theme.primaryButtonColors
+
+class ProfileActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            WhereToGoTheme {
+                ProfileScreen()
+            }
+        }
+    }
+}
+
+@Composable
+fun ProfileScreen(
+    onMenuClick: () -> Unit = {},
+    onSaveClick: () -> Unit = {}
+) {
+    var login by remember { mutableStateOf("ladushsha") }
+    var firstName by remember { mutableStateOf("Lada") }
+    var lastName by remember { mutableStateOf("Romanova") }
+    var middleName by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("89818251172") }
+    var email by remember { mutableStateOf("loshka130@yandex.ru") }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BackgroundColor)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(
+                    top = AppDimens.ScreenPaddingTop,
+                    start = AppDimens.ScreenPaddingHorizontal,
+                    end = AppDimens.ScreenPaddingHorizontal
+                ),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "ПРОФИЛЬ",
+                style = TextHeadStyle,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(AppDimens.FieldSpacing))
+
+            Image(
+                painter = painterResource(id = R.drawable.avatar), // твоя картинка
+                contentDescription = "Аватар",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(CircleShape)
+            )
+
+            Spacer(modifier = Modifier.height(AppDimens.LinkTopSpacer))
+
+            Text(text = login, style = LinkTextStyle)
+
+            Spacer(modifier = Modifier.height(AppDimens.FieldSpacing))
+
+            ProfileField(
+                value = login,
+                onValueChange = { login = it },
+                label = "Логин"
+            )
+
+            Spacer(modifier = Modifier.height(AppDimens.FieldSpacing))
+
+            ProfileField(
+                value = firstName,
+                onValueChange = { firstName = it },
+                label = "Имя"
+            )
+
+            Spacer(modifier = Modifier.height(AppDimens.FieldSpacing))
+
+            ProfileField(
+                value = lastName,
+                onValueChange = { lastName = it },
+                label = "Фамилия"
+            )
+
+            Spacer(modifier = Modifier.height(AppDimens.FieldSpacing))
+
+            ProfileField(
+                value = middleName,
+                onValueChange = { middleName = it },
+                label = "Отчество"
+            )
+
+            Spacer(modifier = Modifier.height(AppDimens.FieldSpacing))
+
+            ProfileField(
+                value = phone,
+                onValueChange = { phone = it },
+                label = "Номер телефона",
+                keyboardType = KeyboardType.Phone
+            )
+
+            Spacer(modifier = Modifier.height(AppDimens.FieldSpacing))
+
+            ProfileField(
+                value = email,
+                onValueChange = { email = it },
+                label = "Почта",
+                keyboardType = KeyboardType.Email
+            )
+
+            Spacer(modifier = Modifier.height(AppDimens.ButtonTopSpacer))
+
+            Button(
+                onClick = onSaveClick,
+                modifier = Modifier
+                    .padding(horizontal = AppDimens.ButtonHorizontalPadding)
+                    .fillMaxWidth()
+                    .height(AppDimens.ButtonHeight),
+                colors = primaryButtonColors()
+            ) {
+                Text(
+                    text = "Сохранить изменения",
+                    style = ButtonTextStyle
+                )
+            }
+
+            Spacer(modifier = Modifier.height(AppDimens.FieldSpacing))
+        }
+
+        // Кнопка меню поверх контента
+        IconButton(
+            onClick = onMenuClick,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(top = AppDimens.ScreenPaddingTop - 10.dp, start = 8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Menu,
+                contentDescription = "Меню",
+                tint = ButtonColor
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProfileField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    keyboardType: KeyboardType = KeyboardType.Text
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label, style = TextLabelStyle) },
+        shape = InputFieldShape,
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        modifier = Modifier.fillMaxWidth(),
+        colors = customTextFieldColors()
+    )
+}
