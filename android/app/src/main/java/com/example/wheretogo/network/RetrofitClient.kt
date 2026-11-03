@@ -33,8 +33,8 @@ object RetrofitClient {
         Retrofit.Builder()
             .baseUrl(baseUrl)
             .client(client)
-            .addConverterFactory(ScalarsConverterFactory.create())
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(ScalarsConverterFactory.create()) // Добавление конвертера для простых типов данных
+            .addConverterFactory(GsonConverterFactory.create()) // Добавление конвертера для объектов
             .build()
             .create(ApiService::class.java)
 
