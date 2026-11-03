@@ -7,6 +7,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
+    //надеюсь я удалю это
+    //private const val  BASE_URL = "http://localhost:8080/"
     private const val BASE_URL = "https://wheretogo-00tp.onrender.com/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
@@ -16,6 +18,8 @@ object RetrofitClient {
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor { chain ->
             chain.proceed(
+
+
                 chain.request().newBuilder()
                     .header("Accept-Language", "ru")
                     .build()
