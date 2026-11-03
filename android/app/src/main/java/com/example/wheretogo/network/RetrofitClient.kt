@@ -5,6 +5,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+import retrofit2.converter.scalars.ScalarsConverterFactory
 
 object RetrofitClient {
     private const val BASE_URL = "https://wheretogo-00tp.onrender.com/"
@@ -32,7 +33,8 @@ object RetrofitClient {
         Retrofit.Builder()
             .baseUrl(baseUrl)
             .client(client)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(ScalarsConverterFactory.create()) // Добавление конвертера для простых типов данных
+            .addConverterFactory(GsonConverterFactory.create()) // Добавление конвертера для объектов
             .build()
             .create(ApiService::class.java)
 
