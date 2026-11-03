@@ -148,15 +148,14 @@ fun MapLibreView(
 
             Feature.fromGeometry(Point.fromLngLat(lon, lat)).apply {
                 addNumberProperty("index", index)
-            }
-            Feature.fromGeometry(Point.fromLngLat(lon, lat)).apply {
-                addNumberProperty("index", index)
                 addStringProperty("title", p.title ?: "")
             }
         }
 
         map?.style?.getSourceAs<GeoJsonSource>(PLACES_SOURCE)
             ?.setGeoJson(FeatureCollection.fromFeatures(features))
+
+        Log.d("MAP_TEST", "Отрисовано точек: ${features.size}")
     }
 
     // Клик по точке

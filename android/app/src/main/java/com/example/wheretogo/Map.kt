@@ -115,7 +115,30 @@ fun MapScreen() {
                 val response = api.getNearbyPlaces(lat = center.latitude, lon = center.longitude, radius = 5000)
                 Log.d("MAP", "Код: ${response.code()}, мест в радиусе 5км от (${center.latitude}, ${center.longitude}): ${response.body()?.size}")
                 if (response.isSuccessful) {
-                    places = response.body().orEmpty()
+                    val receivedPlaces = response.body().orEmpty()
+
+                    Log.d("MAP", "Получено мест: ${receivedPlaces.size}")
+
+                    receivedPlaces
+                        .groupBy { it.title?.trim()?.lowercase() ?: "" }
+                        .filterValues { it.size > 1 }
+                        .forEach { (title, duplicates) ->
+                            Log.w("MAP", "Дубль: $title, количество: ${duplicates.size}")
+                        }
+
+                    val uniqueByTitle = receivedPlaces.distinctBy {
+                        it.title
+                            ?.trim()
+                            ?.lowercase()
+                            ?.replace(Regex("\\s+"), " ")
+                    }
+
+                    places = uniqueByTitle.distinctBy {
+                        Pair(
+                            it.latitude,
+                            it.longitude
+                        )
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("MAP", "Ошибка загрузки мест каждые 5 сек", e)
