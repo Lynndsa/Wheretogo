@@ -115,4 +115,6 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-scalars:3.0.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
 
+
+    implementation("androidx.datastore:datastore-preferences:1.1.7")
 }
