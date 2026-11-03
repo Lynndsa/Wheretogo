@@ -7,7 +7,9 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
-    private const val BASE_URL = "https://wheretogo-00tp.onrender.com/"
+    private const val  BASE_URL = "http://localhost:8080/"
+
+    //private const val BASE_URL = "https://wheretogo-00tp.onrender.com/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY

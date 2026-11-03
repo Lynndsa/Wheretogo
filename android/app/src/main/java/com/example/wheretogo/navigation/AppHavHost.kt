@@ -1,28 +1,83 @@
+
 package com.example.wheretogo.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navOptions
 import com.example.wheretogo.Greeting
 import com.example.wheretogo.LoginWindow
 import com.example.wheretogo.RegistrationWindow
+import com.example.wheretogo.model.SessionManager
+import kotlinx.coroutines.launch
+
+// Замени импорт на фактический пакет, в котором находится MapScreen
+import com.example.wheretogo.MapScreen
 
 @Composable
 fun AppNavHost(
     navController: NavHostController
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    val isLoggedIn by SessionManager
+        .isLoggedIn(context)
+        .collectAsState(initial = null)
+
+    // Пока DataStore загружает состояние, показываем индикатор
+    if (isLoggedIn == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    val startDestination = if (isLoggedIn == true) {
+        Destination.Map.route
+    } else {
+        Destination.Main.route
+    }
+
     NavHost(
         navController = navController,
-        startDestination = Destination.Main.route,
+        startDestination = startDestination
     ) {
+
+        composable(route = Destination.Main.route) {
+            Greeting(
+                onLoginClick = {
+                    navController.navigate(Destination.Login.route)
+                },
+                onGuestClick = {
+                    navController.navigate(Destination.Registration.route)
+                }
+            )
+        }
+
         composable(route = Destination.Registration.route) {
             RegistrationWindow(
-                onLoginClick = { navController.navigate(Destination.Login.route) },
+                onLoginClick = {
+                    navController.navigate(Destination.Login.route)
+                },
                 onRegisterSuccess = {
-                    // после регистрации ведём на вход и убираем экран регистрации из истории
                     navController.navigate(Destination.Login.route) {
-                        popUpTo(Destination.Registration.route) { inclusive = true }
+                        popUpTo(Destination.Registration.route) {
+                            inclusive = true
+                        }
                     }
                 }
             )
@@ -30,21 +85,26 @@ fun AppNavHost(
 
         composable(route = Destination.Login.route) {
             LoginWindow(
-                onRedistrationClick = { navController.navigate(Destination.Registration.route) },
+                onRedistrationClick = {
+                    navController.navigate(Destination.Registration.route)
+                },
                 onLoginSuccess = {
-                    // TODO: поставь сюда свой экран после входа
-                    navController.navigate(Destination.Main.route) {
-                        popUpTo(Destination.Main.route) { inclusive = true }
+                    scope.launch {
+                        SessionManager.saveSession(context)
+
+                        navController.navigate(Destination.Map.route) {
+                            popUpTo(Destination.Main.route) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
                     }
                 }
             )
         }
 
-        composable(route = Destination.Main.route) {
-            Greeting(
-                onLoginClick = { navController.navigate(Destination.Login.route) },
-                onGuestClick = { navController.navigate(Destination.Registration.route) }
-            )
+        composable(route = Destination.Map.route) {
+            MapScreen()
         }
     }
 }
