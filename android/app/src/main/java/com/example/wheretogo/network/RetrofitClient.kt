@@ -19,6 +19,8 @@ object RetrofitClient {
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor { chain ->
             chain.proceed(
+
+
                 chain.request().newBuilder()
                     .header("Accept-Language", "ru")
                     .build()
