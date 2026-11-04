@@ -62,7 +62,7 @@ class LoginActivity : AppCompatActivity() {
 @Composable
 fun LoginWindow(
     onRedistrationClick: () -> Unit,
-    onLoginSuccess: () -> Unit,
+    onLoginSuccess: (Long, String) -> Unit,
     viewModel: LoginViewModel = viewModel()
 ) {
     var name by remember { mutableStateOf("") }
@@ -186,7 +186,10 @@ fun LoginWindow(
         }
 
         Button(
-            onClick = { viewModel.login(name, password, onLoginSuccess) },
+            onClick = { viewModel.login(name,
+                password,
+                onSuccess = { idUser, login ->  onLoginSuccess (idUser, login)})
+                },
             enabled = !viewModel.isLoading,
             modifier = Modifier
                 .padding(start = 30.dp, end = 30.dp)

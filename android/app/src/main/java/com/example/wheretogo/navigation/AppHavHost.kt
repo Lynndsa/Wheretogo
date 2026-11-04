@@ -14,15 +14,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.navOptions
 import com.example.wheretogo.Greeting
 import com.example.wheretogo.LoginWindow
 import com.example.wheretogo.RegistrationWindow
 import com.example.wheretogo.model.SessionManager
 import kotlinx.coroutines.launch
 
-// Замени импорт на фактический пакет, в котором находится MapScreen
-import com.example.wheretogo.MapScreen
+import com.example.wheretogo.ProfileScreen
 
 @Composable
 fun AppNavHost(
@@ -73,10 +71,15 @@ fun AppNavHost(
                 onLoginClick = {
                     navController.navigate(Destination.Login.route)
                 },
-                onRegisterSuccess = {
-                    navController.navigate(Destination.Login.route) {
-                        popUpTo(Destination.Registration.route) {
-                            inclusive = true
+                onRegisterSuccess = { idUser, login ->
+                    scope.launch {
+                        SessionManager.saveSession(context, idUser, login)
+
+                        navController.navigate(Destination.Map.route) {
+                            popUpTo(Destination.Main.route) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
                         }
                     }
                 }
@@ -88,9 +91,9 @@ fun AppNavHost(
                 onRedistrationClick = {
                     navController.navigate(Destination.Registration.route)
                 },
-                onLoginSuccess = {
+                onLoginSuccess = { idUser,login ->
                     scope.launch {
-                        SessionManager.saveSession(context)
+                        SessionManager.saveSession(context, idUser, login)
 
                         navController.navigate(Destination.Map.route) {
                             popUpTo(Destination.Main.route) {
@@ -104,7 +107,7 @@ fun AppNavHost(
         }
 
         composable(route = Destination.Map.route) {
-            MapScreen()
+            ProfileScreen()
         }
     }
 }

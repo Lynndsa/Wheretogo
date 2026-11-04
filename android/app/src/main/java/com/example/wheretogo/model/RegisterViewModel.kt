@@ -42,7 +42,7 @@ class RegisterViewModel : ViewModel() {
         email: String,
         password: String,
         confirmPassword: String,
-        onSuccess: () -> Unit
+        onSuccess: (Long, String) -> Unit
     ) {
 
         // Проверка имени
@@ -124,7 +124,13 @@ class RegisterViewModel : ViewModel() {
                 )
 
                 if (response.isSuccessful) {
-                    onSuccess()
+                    val result = response.body()
+
+                    if (result != null) {
+                        onSuccess(result.idUser, result.login)
+                    } else {
+                        error = "Сервер вернул пустой ответ"
+                    }
                 } else {
 
                     // Читаем тело ответа только один раз

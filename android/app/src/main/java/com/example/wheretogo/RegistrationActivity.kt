@@ -58,7 +58,7 @@ class RegistrationActivity : AppCompatActivity() {
 @Composable
 fun RegistrationWindow(
     onLoginClick: () -> Unit,
-    onRegisterSuccess: () -> Unit,
+    onRegisterSuccess: (Long, String) -> Unit,
     viewModel: RegisterViewModel = viewModel()
 ) {
         var name by remember { mutableStateOf("") }
@@ -206,7 +206,13 @@ fun RegistrationWindow(
 
             Button(
                 onClick = {
-                    viewModel.register(name, phone = number, email, password, confirmPassword, onRegisterSuccess)
+                    viewModel.register(name,
+                        phone = number,
+                        email,
+                        password,
+                        confirmPassword, onSuccess = { idUser, login ->
+                            onRegisterSuccess (idUser, login)}
+                       )
                 },
                 modifier = Modifier
                     .padding(horizontal = AppDimens.ButtonHorizontalPadding)
