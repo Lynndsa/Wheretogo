@@ -66,6 +66,7 @@ class ProfileActivity : AppCompatActivity() {
 
 @Composable
 fun ProfileScreen(
+    onMenuClick: () -> Unit = {},
     viewModel: ProfileViewModel = viewModel()
 ) {
     val context = LocalContext.current

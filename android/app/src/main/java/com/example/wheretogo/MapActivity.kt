@@ -50,7 +50,9 @@ class MapActivity : AppCompatActivity() {
 }
 @Preview
 @Composable
-fun MapWindow() {
+fun MapWindow(
+    onMenuClick: () -> Unit = {},
+) {
 
     Column(
         modifier = Modifier
