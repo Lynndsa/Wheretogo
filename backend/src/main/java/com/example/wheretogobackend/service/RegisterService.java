@@ -20,23 +20,43 @@ public class RegisterService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public void register(RegisterRequest req) {
+    public UserEntity register(RegisterRequest req) {
+
         String name = req.getName().trim();
         String email = req.getEmail().trim();
 
         if (!req.getPassword().equals(req.getConfirmPassword())) {
-            throw new RegistrationException("PASSWORD_ERROR","Пароли не совпадают");
-        }
-        if (userRepository.existsByLogin(name)) {
-            throw new RegistrationException("LOGIN_ERROR","Пользователь с таким именем уже есть");
-        }
-        if (userInfoRepository.existsByPhonenumber(req.getPhonenumber())) {
-            throw new RegistrationException("PHONE_ERROR","Этот номер телефона уже зарегистрирован");
-        }
-        if (userInfoRepository.existsByEmail(email)) {
-            throw new RegistrationException("EMAIL_ERROR","Эта почта уже зарегистрирована");
+            throw new RegistrationException(
+                    "PASSWORD_ERROR",
+                    "Пароли не совпадают"
+            );
         }
 
+        // Проверка уникальности логина
+        if (userRepository.existsByLogin(name)) {
+            throw new RegistrationException(
+                    "LOGIN_ERROR",
+                    "Пользователь с таким именем уже есть"
+            );
+        }
+
+        // Проверка уникальности телефона
+        if (userInfoRepository.existsByPhonenumber(req.getPhonenumber())) {
+            throw new RegistrationException(
+                    "PHONE_ERROR",
+                    "Этот номер телефона уже зарегистрирован"
+            );
+        }
+
+        // Проверка уникальности почты
+        if (userInfoRepository.existsByEmail(email)) {
+            throw new RegistrationException(
+                    "EMAIL_ERROR",
+                    "Эта почта уже зарегистрирована"
+            );
+        }
+
+        // Сохраняем пользователя
         UserEntity user = userRepository.save(
                 UserEntity.builder()
                         .login(name)
@@ -44,11 +64,16 @@ public class RegisterService {
                         .build()
         );
 
+        // Сохраняем дополнительную информацию
         UserInfoEntity info = new UserInfoEntity();
         info.setUser(user);
         info.setName(name);
         info.setPhonenumber(req.getPhonenumber());
         info.setEmail(email);
+
         userInfoRepository.save(info);
+
+        // Возвращаем созданного пользователя с его ID
+        return user;
     }
 }
