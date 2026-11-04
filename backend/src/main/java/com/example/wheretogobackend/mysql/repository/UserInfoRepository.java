@@ -8,4 +8,6 @@ import org.springframework.stereotype.Repository;
 public interface UserInfoRepository extends JpaRepository<UserInfoEntity, Long> {
     boolean existsByPhonenumber(String phonenumber);
     boolean existsByEmail(String email);
+    boolean existsByPhonenumberAndIdUserNot(String phonenumber, Long idUser);
+    boolean existsByEmailAndIdUserNot(String email, Long idUser);
 }

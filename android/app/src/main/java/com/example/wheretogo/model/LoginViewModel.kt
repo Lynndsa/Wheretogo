@@ -30,7 +30,7 @@ class LoginViewModel : ViewModel() {
     fun login(
         login: String,
         password: String,
-        onSuccess: () -> Unit
+        onSuccess: (Long, String) -> Unit
     ) {
 
         // Локальная проверка полей
@@ -64,7 +64,13 @@ class LoginViewModel : ViewModel() {
                 )
 
                 if (response.isSuccessful) {
-                    onSuccess()
+                    val result = response.body()
+
+                    if (result != null) {
+                        onSuccess(result.idUser, result.login)
+                    } else {
+                        error = "Сервер вернул пустой ответ"
+                    }
                 } else {
 
                     // Читаем тело ответа только один раз

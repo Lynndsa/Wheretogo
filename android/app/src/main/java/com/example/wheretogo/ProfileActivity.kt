@@ -1,6 +1,7 @@
 package com.example.wheretogo
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -18,11 +19,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -48,6 +46,11 @@ import com.example.wheretogo.ui.theme.TextLabelStyle
 import com.example.wheretogo.ui.theme.WhereToGoTheme
 import com.example.wheretogo.ui.theme.customTextFieldColors
 import com.example.wheretogo.ui.theme.primaryButtonColors
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.LaunchedEffect
+import com.example.wheretogo.model.ProfileUpdateRequest
+import com.example.wheretogo.model.ProfileViewModel
 
 class ProfileActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,15 +66,36 @@ class ProfileActivity : AppCompatActivity() {
 
 @Composable
 fun ProfileScreen(
-    onMenuClick: () -> Unit = {},
-    onSaveClick: () -> Unit = {}
+    viewModel: ProfileViewModel = viewModel()
 ) {
-    var login by remember { mutableStateOf("ladushsha") }
-    var firstName by remember { mutableStateOf("Lada") }
-    var lastName by remember { mutableStateOf("Romanova") }
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        viewModel.loadProfile(context)
+    }
+
+    val profile = viewModel.profile
+    val isLoading = viewModel.isLoading
+    val error = viewModel.error
+
+    var login by remember { mutableStateOf("") }
+    var firstName by remember { mutableStateOf("") }
+    var lastName by remember { mutableStateOf("") }
     var middleName by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("89818251172") }
-    var email by remember { mutableStateOf("loshka130@yandex.ru") }
+    var phone by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var saveMessage by remember { mutableStateOf("") }
+
+    LaunchedEffect(profile) {
+        profile?.let {
+            login = it.login
+            firstName = it.name
+            lastName = it.lastname ?: ""
+            middleName = it.surname ?: ""
+            phone = it.phonenumber
+            email = it.email
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -160,10 +184,39 @@ fun ProfileScreen(
                 keyboardType = KeyboardType.Email
             )
 
+            if (isLoading) {
+                CircularProgressIndicator()
+            }
+
+            error?.let {
+                Text(
+                    text = it,
+                    color = ButtonColor
+                )
+            }
+
             Spacer(modifier = Modifier.height(AppDimens.ButtonTopSpacer))
 
             Button(
-                onClick = onSaveClick,
+                onClick = {
+                    Log.d("PROFILE_DEBUG", "Нажата кнопка сохранения")
+
+                    val request = ProfileUpdateRequest(
+                        login = login,
+                        name = firstName,
+                        lastname = lastName,
+                        surname = middleName,
+                        phonenumber = phone,
+                        email = email
+                    )
+
+                    Log.d("PROFILE_DEBUG", "Вызываем updateProfile")
+
+                    viewModel.updateProfile(context, request) {
+                        Log.d("PROFILE_DEBUG", "Профиль успешно сохранён")
+                        saveMessage = "Изменения сохранены!"
+                    }
+                },
                 modifier = Modifier
                     .padding(horizontal = AppDimens.ButtonHorizontalPadding)
                     .fillMaxWidth()
@@ -179,19 +232,6 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(AppDimens.FieldSpacing))
         }
 
-        // Кнопка меню поверх контента
-        IconButton(
-            onClick = onMenuClick,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(top = AppDimens.ScreenPaddingTop - 10.dp, start = 8.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Menu,
-                contentDescription = "Меню",
-                tint = ButtonColor
-            )
-        }
     }
 }
 

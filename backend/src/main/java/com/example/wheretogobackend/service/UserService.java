@@ -23,20 +23,20 @@ public class UserService {
                 .orElseThrow(() -> new RegistrationException("LOGIN_NOT_EXIST","Пользователь с таким логином не найден"));
     }
 
-    // Метод входа / проверки пароля с выбросом исключений
-    public boolean checkPassword(String login, String rawPassword) {
-        // 1. Находим пользователя (если его нет, getUser сразу выбросит RuntimeException)
+    // Метод авторизации
+    public UserEntity authenticate(String login, String rawPassword) {
+
         UserEntity user = getUser(login);
 
-        // 2. Достаем хэш из базы
         String storedHash = user.getPassword();
 
-        // 3. Сравниваем введенный пароль с хэшем
         if (!passwordEncoder.matches(rawPassword, storedHash)) {
-            throw new RegistrationException("PASSWORD_EXIST","Неверный пароль");
+            throw new RegistrationException(
+                    "PASSWORD_EXIST",
+                    "Неверный пароль"
+            );
         }
 
-        // Если всё ок
-        return true;
+        return user;
     }
 }

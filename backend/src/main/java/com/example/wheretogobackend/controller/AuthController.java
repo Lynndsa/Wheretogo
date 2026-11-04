@@ -1,7 +1,10 @@
 package com.example.wheretogobackend.controller;
 
 import com.example.wheretogobackend.dto.LoginRequest;
+import com.example.wheretogobackend.dto.LoginResponse;
 import com.example.wheretogobackend.dto.RegisterRequest;
+import com.example.wheretogobackend.exception.RegistrationException;
+import com.example.wheretogobackend.mysql.entity.UserEntity;
 import com.example.wheretogobackend.service.RegisterService;
 import com.example.wheretogobackend.service.UserService;
 import jakarta.validation.Valid;
@@ -23,42 +26,46 @@ public class AuthController {
 
     // Вход
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-
-        boolean isAuthenticated = userService.checkPassword(
+    public ResponseEntity<LoginResponse> login(
+            @Valid @RequestBody LoginRequest request
+    ) {
+        UserEntity user = userService.authenticate(
                 request.getLogin(),
                 request.getPassword()
         );
 
-        if (isAuthenticated) {
-            return ResponseEntity.ok("Вход успешно выполнен!");
-        }
-
-        return ResponseEntity.badRequest()
-                .body("Ошибка авторизации");
+        return ResponseEntity.ok(
+                new LoginResponse(
+                        user.getIdUser(),
+                        user.getLogin()
+                )
+        );
     }
 
     // Регистрация
     @PostMapping("/register")
-    public ResponseEntity<?> register(
+    public ResponseEntity<LoginResponse> register(
             @Valid @RequestBody RegisterRequest request,
-            BindingResult bindingResult) {
+            BindingResult bindingResult
+    ) {
 
         if (bindingResult.hasErrors()) {
             String message = bindingResult.getFieldErrors()
                     .get(0)
                     .getDefaultMessage();
 
-            return ResponseEntity.badRequest()
-                    .body(Map.of(
-                            "code", "VALIDATION_ERROR",
-                            "message", message
-                    ));
+            throw new RegistrationException(
+                    "VALIDATION_ERROR",
+                    message
+            );
         }
 
-        registerService.register(request);
+        UserEntity user = registerService.register(request);
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body("Регистрация прошла успешно!");
+                .body(new LoginResponse(
+                        user.getIdUser(),
+                        user.getLogin()
+                ));
     }
 }
