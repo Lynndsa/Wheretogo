@@ -11,3 +11,6 @@ val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
 val  BackgroundColor = Color(0xFFE8F3E5)
 val  ButtonColor = Color(0xff315C45)
+
+val MenuPanelColor = Color(0xFFA8E6A1)   // фон панели меню
+val MenuItemColor = Color(0xFFA0E096)    // кнопки пунктов меню
