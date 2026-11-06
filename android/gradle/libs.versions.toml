@@ -12,7 +12,7 @@ composeBom = "2026.09.00"
 appcompat = "1.8.0"
 material = "1.14.0"
 activityKtx = "1.13.0"
-constraintlayout = "2.1.4"
+constraintlayout = "2.2.2"
 foundationLayout = "1.12.1"
 playServicesMaps = "20.1.0"
 
