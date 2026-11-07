@@ -31,6 +31,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.wheretogo.navigation.AppTopBar
 import com.example.wheretogo.ui.theme.AppDimens
 import com.example.wheretogo.ui.theme.BackgroundColor
 import com.example.wheretogo.ui.theme.ButtonTextStyle
@@ -64,11 +65,7 @@ fun MapWindow(
                 end = AppDimens.ScreenPaddingHorizontal
             )
     ) {
-        Text(
-            text = "КАРТА",
-            style = TextHeadStyle,
-            modifier = Modifier.fillMaxWidth()
-        )
+
 
         Spacer(modifier = Modifier.height(AppDimens.ScreenPaddingTop))
 

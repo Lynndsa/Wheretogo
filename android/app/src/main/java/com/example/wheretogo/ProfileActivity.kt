@@ -114,11 +114,6 @@ fun ProfileScreen(
                 ),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "ПРОФИЛЬ",
-                style = TextHeadStyle,
-                modifier = Modifier.fillMaxWidth()
-            )
 
             Spacer(modifier = Modifier.height(AppDimens.FieldSpacing))
 
