@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
@@ -61,7 +62,6 @@ fun SideMenu(
     BackHandler(enabled = visible, onBack = onDismiss)
 
     Box(modifier = modifier.fillMaxSize()) {
-        // Затемнение справа от меню: тап закрывает меню
         AnimatedVisibility(
             visible = visible,
             enter = fadeIn(),
@@ -91,7 +91,6 @@ fun SideMenu(
                     .fillMaxWidth(0.48f)
                     .background(MenuPanelColor)
                     .statusBarsPadding()
-                    // перехватываем тапы, чтобы они не уходили в затемнение
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -106,6 +105,7 @@ fun SideMenu(
                         imageVector = Icons.Default.Menu,
                         contentDescription = "Закрыть меню",
                         tint = ButtonColor,
+                        modifier = Modifier.size(35.dp)
                     )
                 }
 

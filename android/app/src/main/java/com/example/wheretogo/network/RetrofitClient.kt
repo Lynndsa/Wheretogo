@@ -8,9 +8,9 @@ import java.util.concurrent.TimeUnit
 import retrofit2.converter.scalars.ScalarsConverterFactory
 
 object RetrofitClient {
-    //private const val BASE_URL = "http://192.168.31.46:8080/"
+    //////private const val BASE_URL = "http://192.168.31.46:8080/"
 
-   private const val BASE_URL = "https://wheretogo-00tp.onrender.com/"
+    private const val BASE_URL = "https://wheretogo-00tp.onrender.com/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY

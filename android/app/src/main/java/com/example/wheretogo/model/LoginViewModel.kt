@@ -114,7 +114,7 @@ class LoginViewModel : ViewModel() {
                 }
 
             } catch (e: IOException) {
-                error = "Нет соединения с сервером"
+                error = "Нет соединения с сервером" + e.message
 
             } catch (e: Exception) {
                 android.util.Log.e(
