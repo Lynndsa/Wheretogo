@@ -1,10 +1,8 @@
 package com.example.wheretogo
 
-import android.os.Bundle
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -29,12 +27,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.wheretogo.model.RegisterViewModel
 import com.example.wheretogo.ui.theme.AppDimens
@@ -48,13 +44,7 @@ import com.example.wheretogo.ui.theme.customTextFieldColors
 import com.example.wheretogo.ui.theme.exceptionTypeErrorStyle
 import com.example.wheretogo.ui.theme.primaryButtonColors
 
-class RegistrationActivity : AppCompatActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
 
-    }
-}
 @Composable
 fun RegistrationWindow(
     onLoginClick: () -> Unit,
