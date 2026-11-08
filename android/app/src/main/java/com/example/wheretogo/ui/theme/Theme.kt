@@ -76,7 +76,7 @@ val LinkTextStyle = TextStyle(
 val InputFieldShape = RoundedCornerShape(50.dp)
 
 object AppDimens {
-    val ScreenPaddingTop: Dp = 50.dp
+    val ScreenPaddingTop: Dp = 20.dp
     val ScreenPaddingHorizontal: Dp = 5.dp
 
     val TitleBottomSpacer: Dp = 90.dp

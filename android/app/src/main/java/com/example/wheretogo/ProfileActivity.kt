@@ -1,10 +1,7 @@
 package com.example.wheretogo
 
-import android.os.Bundle
+
 import android.util.Log
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -41,9 +38,7 @@ import com.example.wheretogo.ui.theme.ButtonColor
 import com.example.wheretogo.ui.theme.ButtonTextStyle
 import com.example.wheretogo.ui.theme.InputFieldShape
 import com.example.wheretogo.ui.theme.LinkTextStyle
-import com.example.wheretogo.ui.theme.TextHeadStyle
 import com.example.wheretogo.ui.theme.TextLabelStyle
-import com.example.wheretogo.ui.theme.WhereToGoTheme
 import com.example.wheretogo.ui.theme.customTextFieldColors
 import com.example.wheretogo.ui.theme.primaryButtonColors
 import androidx.compose.ui.platform.LocalContext
@@ -52,17 +47,7 @@ import androidx.compose.runtime.LaunchedEffect
 import com.example.wheretogo.model.ProfileUpdateRequest
 import com.example.wheretogo.model.ProfileViewModel
 
-class ProfileActivity : AppCompatActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            WhereToGoTheme {
-                ProfileScreen()
-            }
-        }
-    }
-}
+
 
 @Composable
 fun ProfileScreen(
@@ -114,11 +99,6 @@ fun ProfileScreen(
                 ),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "ПРОФИЛЬ",
-                style = TextHeadStyle,
-                modifier = Modifier.fillMaxWidth()
-            )
 
             Spacer(modifier = Modifier.height(AppDimens.FieldSpacing))
 

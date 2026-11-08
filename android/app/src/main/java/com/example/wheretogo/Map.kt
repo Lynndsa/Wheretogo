@@ -162,6 +162,7 @@ fun MapScreen() {
     )
 }
 
+
 private suspend fun getDeviceLocation(context: Context): Pair<Double, Double> {
     return withContext(Dispatchers.IO) {
         try {
