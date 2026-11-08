@@ -29,6 +29,7 @@ import kotlin.time.Duration.Companion.milliseconds
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen() {
+    var currentRadius by remember { mutableStateOf(5000) }
     if (LocalInspectionMode.current) {
         MapLibreView(
             modifier = Modifier.fillMaxSize(),
@@ -112,7 +113,7 @@ fun MapScreen() {
 
             try {
                 val api = RetrofitClient.createApi("https://wheretogo-00tp.onrender.com/")
-                val response = api.getNearbyPlaces(lat = center.latitude, lon = center.longitude, radius = 5000)
+                val response = api.getNearbyPlaces(lat = center.latitude, lon = center.longitude, radius = currentRadius)
                 Log.d("MAP", "Код: ${response.code()}, мест в радиусе 5км от (${center.latitude}, ${center.longitude}): ${response.body()?.size}")
                 if (response.isSuccessful) {
                     val receivedPlaces = response.body().orEmpty()
@@ -155,8 +156,9 @@ fun MapScreen() {
         initialZoom = 11.0,
         places = places,
         isLocationGranted = isLocationGranted,
-        onCameraCenterChanged = { newCenter ->
-            currentMapCenter = newCenter
+        onCameraCenterChanged = { center, radius ->
+            currentMapCenter = center
+            currentRadius = radius
         },
         onPlaceClick = { place -> /* показать bottom sheet и т.п. */ }
     )
