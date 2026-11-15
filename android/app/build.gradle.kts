@@ -73,6 +73,7 @@ dependencies {
     implementation(libs.play.services.maps)
 
 
+
     // MapLibre
     implementation("org.maplibre.gl:android-sdk:13.7.1")
 

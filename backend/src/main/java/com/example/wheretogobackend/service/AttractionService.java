@@ -107,6 +107,7 @@ public class AttractionService {
         return props.getWiki();
     }
 
+
     public List<AttractionDto> getNearbyPlacesStream(
             double lat,
             double lon,
@@ -140,48 +141,25 @@ public class AttractionService {
                 });
 
         return uniquePlaces.values().stream()
-                .map(place -> {
-                    Map<String, String> wikiData =
-                            wikipediaService.getWikiData(place.getName());
-
-                    String wikiDesc = wikiData.get("description");
-
-                    String finalDescription;
-
-                    if (wikiDesc != null && !wikiDesc.isBlank()) {
-                        finalDescription = wikiDesc;
-                    } else if (place.getDescription() != null
-                            && !place.getDescription().isBlank()) {
-                        finalDescription = place.getDescription();
-                    } else {
-                        finalDescription = "Описание отсутствует";
-                    }
-
-                    String wikiImage = wikiData.get("imageUrl");
-
-                    String finalImage =
-                            (wikiImage != null && !wikiImage.isBlank())
-                                    ? wikiImage
-                                    : place.getImageUrl();
-
-                    System.out.println(
-                            "Успешно обработано место: " + place.getName()
-                    );
-
-                    return AttractionDto.builder()
-                            .title(place.getName())
-                            .address(place.getAddress())
-                            .latitude(place.getLatitude())
-                            .longitude(place.getLongitude())
-                            .category(place.getCategory())
-                            .description(finalDescription)
-                            .imageUrl(finalImage)
-                            .websiteUrl(place.getWebsiteUrl())
-                            .wikipediaUrl(wikiData.get("wikiUrl"))
-                            .build();
-                })
+                .map(place -> AttractionDto.builder()
+                        .title(place.getName())
+                        .address(place.getAddress())
+                        .latitude(place.getLatitude())
+                        .longitude(place.getLongitude())
+                        .category(place.getCategory())
+                        .description(
+                                place.getDescription() != null
+                                        && !place.getDescription().isBlank()
+                                        ? place.getDescription()
+                                        : "Описание отсутствует"
+                        )
+                        .imageUrl(place.getImageUrl())
+                        .websiteUrl(place.getWebsiteUrl())
+                        .build()
+                )
                 .toList();
     }
+
 
     public List<AttractionDto> getAllNearbyPlaces(
             double lat,
@@ -294,5 +272,80 @@ public class AttractionService {
         }
 
         return null;
+    }public List<AttractionDto> searchPlaces(String query) {
+
+        if (query == null || query.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        GeoapifyResponseDto geoapifyData =
+                geoapifyService.searchPlaces(query.trim());
+
+        List<AttractionDto> attractions = new ArrayList<>();
+
+        if (geoapifyData == null
+                || geoapifyData.getFeatures() == null) {
+            return attractions;
+        }
+
+        for (GeoapifyResponseDto.Feature feature
+                : geoapifyData.getFeatures()) {
+
+            GeoapifyResponseDto.Properties props =
+                    feature.getProperties();
+
+            if (props == null
+                    || props.getName() == null
+                    || props.getName().isBlank()
+                    || props.getLat() == null
+                    || props.getLon() == null) {
+                continue;
+            }
+
+            String wikiTag = extractWikiTag(props);
+
+            String searchTitle =
+                    wikiTag != null && !wikiTag.isBlank()
+                            ? wikiTag
+                            : props.getName();
+
+            Map<String, String> wikiData =
+                    wikipediaService.getWikiData(searchTitle);
+
+            String imageUrl = wikiData.get("imageUrl");
+            String description = wikiData.get("description");
+
+            String wikipediaUrl = props.getWiki();
+
+            if (wikipediaUrl == null || wikipediaUrl.isBlank()) {
+                wikipediaUrl = wikiData.get("wikiUrl");
+            }
+
+            if (description == null || description.isBlank()) {
+                description = "Описание отсутствует";
+            }
+
+            String category =
+                    props.getCategories() != null
+                            && !props.getCategories().isEmpty()
+                            ? props.getCategories().get(0)
+                            : "attraction";
+
+            AttractionDto dto = AttractionDto.builder()
+                    .title(props.getName())
+                    .latitude(props.getLat())
+                    .longitude(props.getLon())
+                    .category(category)
+                    .address(props.getAddress())
+                    .websiteUrl(props.getWebsite())
+                    .description(description)
+                    .imageUrl(imageUrl)
+                    .wikipediaUrl(wikipediaUrl)
+                    .build();
+
+            attractions.add(dto);
+        }
+
+        return attractions;
     }
 }

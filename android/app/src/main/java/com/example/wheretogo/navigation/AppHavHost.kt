@@ -20,6 +20,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.wheretogo.AttractionsListScreen
 
 import com.example.wheretogo.Greeting
 import com.example.wheretogo.LoginWindow
@@ -174,7 +175,7 @@ fun AppNavHost(
                 }
 
                 composable(route = Destination.Places.route) {
-                    Placeholder("Достопримечательности")
+                    AttractionsListScreen()
                 }
 
                 composable(route = Destination.Wishlist.route) {

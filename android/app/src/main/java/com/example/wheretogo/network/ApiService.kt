@@ -49,4 +49,10 @@ interface ApiService {
         @Path("idUser") idUser: Long,
         @Body request: ProfileUpdateRequest
     ): Response<ProfileResponse>
+
+    @GET("api/places/search")
+    suspend fun searchPlaces(
+        @Query("query") query: String
+    ): Response<List<PlaceItem>>
 }
+

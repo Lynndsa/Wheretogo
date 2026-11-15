@@ -39,4 +39,10 @@ public class PlaceController {
 
         return ResponseEntity.ok(attraction);
     }
+    @GetMapping("/search")
+    public List<AttractionDto> searchPlaces(
+            @RequestParam String query
+    ) {
+        return placeService.searchPlaces(query);
+    }
 }

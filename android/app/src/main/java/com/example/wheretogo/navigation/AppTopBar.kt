@@ -49,7 +49,7 @@ fun AppTopBar(
 
         Text(
             text = title,
-            style = TextHeadStyle.copy(fontSize = 26.sp),
+            style = TextHeadStyle.copy(fontSize = 22.sp),
             modifier = Modifier.align(Alignment.Center)
         )
     }

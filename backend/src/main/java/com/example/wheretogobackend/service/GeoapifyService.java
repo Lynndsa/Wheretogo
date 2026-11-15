@@ -136,4 +136,32 @@ public class GeoapifyService {
 
         return firstResponse;
     }
+
+    public GeoapifyResponseDto searchPlaces(String query) {
+
+        try {
+            return webClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .scheme("https")
+                            .host("api.geoapify.com")
+                            .path("/v1/geocode/search")
+                            .queryParam("text", query)
+                            .queryParam("filter", "rect:27.7,58.0,35.7,61.5")
+                            .queryParam("format", "geojson")
+                            .queryParam("limit", 20)
+                            .queryParam("apiKey", apiKey)
+                            .build())
+                    .retrieve()
+                    .bodyToMono(GeoapifyResponseDto.class)
+                    .block();
+
+        } catch (WebClientResponseException e) {
+            System.err.println(
+                    "Ошибка поиска Geoapify: "
+                            + e.getStatusCode().value()
+                            + " " + e.getResponseBodyAsString()
+            );
+            throw e;
+        }
+    }
 }
