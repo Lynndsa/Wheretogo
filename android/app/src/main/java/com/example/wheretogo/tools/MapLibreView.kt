@@ -80,7 +80,9 @@ fun MapLibreView(
     isLocationGranted: Boolean = false,
     /** Центр карты и радиус видимой области в метрах */
     onCameraCenterChanged: (LatLng, Int) -> Unit = { _, _ -> },
-    onPlaceClick: (PlaceItem) -> Unit = {}
+    onPlaceClick: (PlaceItem) -> Unit = {},
+    /** Клик по пустому месту карты (не по точке и не по кластеру) */
+    onMapClick: () -> Unit = {}
 ) {
     if (LocalInspectionMode.current) {
         Box(
@@ -99,6 +101,7 @@ fun MapLibreView(
     // Всегда актуальные значения для слушателей, которые регистрируются один раз
     val currentPlaces by rememberUpdatedState(places)
     val currentOnPlaceClick by rememberUpdatedState(onPlaceClick)
+    val currentOnMapClick by rememberUpdatedState(onMapClick)
     val currentOnCameraCenterChanged by rememberUpdatedState(onCameraCenterChanged)
 
     remember {
@@ -269,6 +272,7 @@ fun MapLibreView(
                 currentPlaces.getOrNull(index)?.let(currentOnPlaceClick)
                 true
             } else {
+                currentOnMapClick()
                 false
             }
         }

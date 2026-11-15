@@ -7,12 +7,29 @@ import android.location.LocationManager
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.example.wheretogo.model.PlaceItem
 import com.example.wheretogo.network.RetrofitClient
@@ -29,7 +46,6 @@ import kotlin.time.Duration.Companion.milliseconds
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen() {
-    var currentRadius by remember { mutableStateOf(5000) }
     if (LocalInspectionMode.current) {
         MapLibreView(
             modifier = Modifier.fillMaxSize(),
@@ -42,14 +58,20 @@ fun MapScreen() {
 
     val context = LocalContext.current
 
-    // Центр экрана карты
+    // Центр и радиус видимой области карты
     var currentMapCenter by remember { mutableStateOf<LatLng?>(null) }
+    var currentRadius by remember { mutableStateOf(5000) }
+
+    // Выбранное место (для карточки снизу)
+    var selectedPlace by remember { mutableStateOf<PlaceItem?>(null) }
+    var lastShownPlace by remember { mutableStateOf<PlaceItem?>(null) }
+    if (selectedPlace != null) lastShownPlace = selectedPlace
 
     // Проверка текущего статуса разрешения геолокации
     var isLocationGranted by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
         )
     }
 
@@ -102,7 +124,7 @@ fun MapScreen() {
     }
 
     // Динамическая загрузка мест вокруг центра экрана каждые 5 секунд
-    LaunchedEffect(isLocationGranted, currentMapCenter) {
+    LaunchedEffect(isLocationGranted, currentMapCenter, currentRadius) {
         while (isActive) {
             val center = currentMapCenter ?: if (isLocationGranted) {
                 val (lat, lon) = getDeviceLocation(context)
@@ -113,8 +135,12 @@ fun MapScreen() {
 
             try {
                 val api = RetrofitClient.createApi("https://wheretogo-00tp.onrender.com/")
-                val response = api.getNearbyPlaces(lat = center.latitude, lon = center.longitude, radius = currentRadius)
-                Log.d("MAP", "Код: ${response.code()}, мест в радиусе 5км от (${center.latitude}, ${center.longitude}): ${response.body()?.size}")
+                val response = api.getNearbyPlaces(
+                    lat = center.latitude,
+                    lon = center.longitude,
+                    radius = currentRadius
+                )
+                Log.d("MAP", "Код: ${response.code()}, мест в радиусе ${currentRadius}м от (${center.latitude}, ${center.longitude}): ${response.body()?.size}")
                 if (response.isSuccessful) {
                     val receivedPlaces = response.body().orEmpty()
 
@@ -149,19 +175,81 @@ fun MapScreen() {
         }
     }
 
-    MapLibreView(
-        modifier = Modifier.fillMaxSize(),
-        styleUrl = mapTilerStyleUrl,
-        initialCenter = LatLng(59.9386, 30.3141),
-        initialZoom = 11.0,
-        places = places,
-        isLocationGranted = isLocationGranted,
-        onCameraCenterChanged = { center, radius ->
-            currentMapCenter = center
-            currentRadius = radius
-        },
-        onPlaceClick = { place -> /* показать bottom sheet и т.п. */ }
-    )
+    Box(modifier = Modifier.fillMaxSize()) {
+        MapLibreView(
+            modifier = Modifier.fillMaxSize(),
+            styleUrl = mapTilerStyleUrl,
+            initialCenter = LatLng(59.9386, 30.3141),
+            initialZoom = 11.0,
+            places = places,
+            isLocationGranted = isLocationGranted,
+            onCameraCenterChanged = { newCenter, radius ->
+                currentMapCenter = newCenter
+                currentRadius = radius
+            },
+            onPlaceClick = { place -> selectedPlace = place },
+            onMapClick = { selectedPlace = null }
+        )
+
+        // Карточка выбранного места снизу
+        AnimatedVisibility(
+            visible = selectedPlace != null,
+            modifier = Modifier.align(Alignment.BottomCenter),
+            enter = slideInVertically { it } + fadeIn(),
+            exit = slideOutVertically { it } + fadeOut()
+        ) {
+            // Последнее непустое место, чтобы текст не пропадал во время анимации закрытия
+            val shown = selectedPlace ?: lastShownPlace
+            if (shown != null) {
+                PlaceInfoCard(
+                    place = shown,
+                    onClose = { selectedPlace = null }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlaceInfoCard(
+    place: PlaceItem,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = place.title?.takeIf { it.isNotBlank() } ?: "Без названия",
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = place.address?.takeIf { it.isNotBlank() } ?: "Адрес не указан",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            IconButton(onClick = onClose) {
+                Icon(Icons.Default.Close, contentDescription = "Закрыть")
+            }
+        }
+    }
 }
 
 private suspend fun getDeviceLocation(context: Context): Pair<Double, Double> {
