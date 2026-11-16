@@ -55,4 +55,10 @@ interface ApiService {
     suspend fun searchPlaces(
         @Query("query") query: String
     ): Response<List<PlaceItem>>
+
+    @GET("api/places/details")
+    suspend fun getPlaceDetails(
+        @Query("lat") lat: Double,
+        @Query("lon") lon: Double
+    ): Response<PlaceItem>
 }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -15,10 +16,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.navArgument
 import com.example.wheretogo.ui.attractions.AttractionsListScreen
 
 import com.example.wheretogo.Greeting
@@ -27,6 +31,8 @@ import com.example.wheretogo.ui.map.MapWindow
 import com.example.wheretogo.ui.profile.ProfileScreen
 import com.example.wheretogo.ui.auth.RegistrationWindow
 import com.example.wheretogo.data.local.SessionManager
+import com.example.wheretogo.ui.attractions.AttractionScreen
+import com.example.wheretogo.ui.attractions.AttractionsViewModel
 
 import kotlinx.coroutines.launch
 
@@ -34,7 +40,8 @@ private fun getScreenTitle(route: String?): String {
     return when (route) {
         Destination.Profile.route -> "ПРОФИЛЬ"
         Destination.Map.route -> "КАРТА"
-        Destination.Places.route -> "ДОСТОПРИМЕЧАТЕЛЬНОСТИ"
+        Destination.Places.route,
+        Destination.AttractionDetails.route -> "ДОСТОПРИМЕЧАТЕЛЬНОСТИ"
         Destination.Wishlist.route -> "ХОЧУ СХОДИТЬ"
         Destination.MyRoutes.route -> "МОИ МАРШРУТЫ"
         Destination.ReadyRoutes.route -> "ГОТОВЫЕ МАРШРУТЫ"
@@ -50,6 +57,7 @@ fun AppNavHost(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val attractionsViewModel: AttractionsViewModel = viewModel()
 
     // Открыто ли боковое меню
     var menuOpen by remember {
@@ -60,6 +68,8 @@ fun AppNavHost(
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val screenTitle = getScreenTitle(currentRoute)
+
+
 
     // Показываем верхнюю панель только на основных экранах
     val showMenuButton = currentRoute != null && currentRoute !in listOf(
@@ -170,11 +180,102 @@ fun AppNavHost(
                 }
 
                 composable(route = Destination.Map.route) {
-                    MapWindow()
+                    MapWindow(
+                        onPlaceClick = { place ->
+                            val lat = place.latitude
+                            val lon = place.longitude
+
+                            if (lat != null && lon != null) {
+                                attractionsViewModel.selectAttraction(place)
+                                navController.navigate(
+                                    Destination.AttractionDetails.createRoute(lat, lon)
+                                )
+                            }
+                        }
+                    )
                 }
 
                 composable(route = Destination.Places.route) {
-                    AttractionsListScreen()
+                    AttractionsListScreen(
+                        attractionsViewModel = attractionsViewModel,
+                        onPlaceClick = { place ->
+
+                            val lat = place.latitude
+                            val lon = place.longitude
+
+                            if (lat != null && lon != null) {
+                                navController.navigate(
+                                    Destination.AttractionDetails.createRoute(lat, lon)
+                                )
+                            }
+                        }
+                    )
+                }
+                composable(
+                    route = Destination.AttractionDetails.route,
+                    arguments = listOf(
+                        navArgument("lat") {
+                            type = NavType.StringType
+                        },
+                        navArgument("lon") {
+                            type = NavType.StringType
+                        }
+                    )
+                ) { backStackEntry ->
+
+                    val lat = backStackEntry.arguments
+                        ?.getString("lat")
+                        ?.toDoubleOrNull()
+
+                    val lon = backStackEntry.arguments
+                        ?.getString("lon")
+                        ?.toDoubleOrNull()
+
+                    if (lat != null && lon != null) {
+
+                        LaunchedEffect(lat, lon) {
+                            attractionsViewModel.loadAttraction(lat, lon)
+                        }
+
+                        val attraction = attractionsViewModel.selectedAttraction
+                        val isLoading = attractionsViewModel.isAttractionLoading
+                        val errorMessage = attractionsViewModel.attractionError
+
+                        when {
+                            isLoading -> {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            }
+
+                            attraction != null -> {
+                                AttractionScreen(
+                                    attraction = attraction
+                                )
+                            }
+
+                            errorMessage != null -> {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(errorMessage)
+                                }
+                            }
+
+                            else -> {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            }
+                        }
+                    }
                 }
 
                 composable(route = Destination.Wishlist.route) {
