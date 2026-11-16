@@ -45,7 +45,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MapScreen() {
+fun MapScreen(  onPlaceClick: (PlaceItem) -> Unit = {}) {
     if (LocalInspectionMode.current) {
         MapLibreView(
             modifier = Modifier.fillMaxSize(),
@@ -134,8 +134,7 @@ fun MapScreen() {
             }
 
             try {
-                val api = RetrofitClient.createApi("https://wheretogo-00tp.onrender.com/")
-                val response = api.getNearbyPlaces(
+                val response = RetrofitClient.apiService.getNearbyPlaces(
                     lat = center.latitude,
                     lon = center.longitude,
                     radius = currentRadius
@@ -178,6 +177,7 @@ fun MapScreen() {
     Box(modifier = Modifier.fillMaxSize()) {
         MapLibreView(
             modifier = Modifier.fillMaxSize(),
+            onPlaceClick = onPlaceClick,
             styleUrl = mapTilerStyleUrl,
             initialCenter = LatLng(59.9386, 30.3141),
             initialZoom = 11.0,
@@ -187,7 +187,6 @@ fun MapScreen() {
                 currentMapCenter = newCenter
                 currentRadius = radius
             },
-            onPlaceClick = { place -> selectedPlace = place },
             onMapClick = { selectedPlace = null }
         )
 

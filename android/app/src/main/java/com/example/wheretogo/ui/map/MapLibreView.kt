@@ -162,9 +162,6 @@ fun MapLibreView(
                             )
                     )
 
-                    // Число объектов внутри кластера
-                    // Если цифры не видны, добавьте textFont(arrayOf("Noto Sans Regular"))
-                    // (название должно совпадать со шрифтом из стиля)
                     style.addLayer(
                         SymbolLayer(CLUSTER_COUNT_LAYER, PLACES_SOURCE)
                             .withFilter(isCluster)
