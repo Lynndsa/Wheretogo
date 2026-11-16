@@ -32,6 +32,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.wheretogo.data.model.PlaceItem
 import com.example.wheretogo.ui.theme.AppDimens
 import com.example.wheretogo.ui.theme.BackgroundColor
 import com.example.wheretogo.ui.theme.ButtonColor
@@ -43,24 +44,9 @@ import com.example.wheretogo.ui.theme.TextLabelStyle
 import com.example.wheretogo.ui.theme.WhereToGoTheme
 import com.example.wheretogo.ui.theme.primaryButtonColors
 
-// Модель на клиенте: поля те же, что в Attraction на бэкенде.
-// Потом лучше вынести в пакет model.
-data class Attraction(
-    val id: Long,
-    val title: String,
-    val description: String? = null,
-    val address: String? = null,
-    val latitude: Double? = null,
-    val longitude: Double? = null,
-    val category: String? = null,
-    val imageUrl: String? = null,
-    val websiteUrl: String? = null,
-    val wikipediaUrl: String? = null,
-)
-
 @Composable
 fun AttractionScreen(
-    attraction: Attraction,
+    attraction: PlaceItem,
     onAddToRouteClick: () -> Unit = {},
 ) {
     val uriHandler = LocalUriHandler.current
@@ -72,25 +58,7 @@ fun AttractionScreen(
             .background(BackgroundColor)
             .statusBarsPadding()
     ) {
-        // Шапка. Высота 64.dp подобрана под иконку меню из AppNavHost
-        // (она стоит с отступом 8.dp и имеет размер 48.dp), чтобы они были на одной линии.
-        // Боковые отступы 52.dp оставляют место под иконку.
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(64.dp)
-                .padding(horizontal = 52.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "ДОСТОПРИМЕЧАТЕЛЬНОСТИ",
-                style = TextHeadStyle.copy(fontSize = 18.sp),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
 
-        // Прокручиваемая часть: картинка, название, описание, адрес, ссылки
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -111,11 +79,13 @@ fun AttractionScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            Text(
-                text = attraction.title,
-                style = TextLabelStyle.copy(fontSize = 20.sp, textAlign = TextAlign.Center),
-                modifier = Modifier.fillMaxWidth()
-            )
+            attraction.title?.let {
+                Text(
+                    text = it,
+                    style = TextLabelStyle.copy(fontSize = 20.sp, textAlign = TextAlign.Center),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
             Spacer(Modifier.height(16.dp))
 
@@ -170,7 +140,7 @@ fun AttractionScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = AppDimens.ButtonHorizontalPadding)
-                .padding(top = 12.dp, bottom = 24.dp)
+                .padding(top = 12.dp, bottom = 12.dp)
                 .navigationBarsPadding()
                 .height(AppDimens.ButtonHeight)
         ) {
@@ -179,26 +149,3 @@ fun AttractionScreen(
     }
 }
 
-// Тестовые данные, пока нет запроса к бэкенду
-val sampleAttraction = Attraction(
-    id = 1,
-    title = "Государственный Эрмитаж",
-    description = "Государственный Эрмитаж — это один из крупнейших и самых известных " +
-            "художественных и культурно-исторических музеев мира, расположенный в Санкт-Петербурге.",
-    address = "Главный комплекс музея расположен в самом центре Санкт-Петербурга " +
-            "по адресу: Дворцовая площадь, дом 2",
-    latitude = 59.9398,
-    longitude = 30.3146,
-    category = "Музей",
-    imageUrl = null, // сюда подставится ссылка на картинку
-    websiteUrl = "https://www.hermitagemuseum.org",
-    wikipediaUrl = "https://ru.wikipedia.org/wiki/Эрмитаж",
-)
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-private fun AttractionScreenPreview() {
-    WhereToGoTheme {
-        AttractionScreen(attraction = sampleAttraction)
-    }
-}

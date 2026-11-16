@@ -1,3 +1,4 @@
+
 package com.example.wheretogo.ui.navigation
 
 sealed class Destination(val route: String) {
@@ -7,6 +8,10 @@ sealed class Destination(val route: String) {
     data object Map : Destination(MAP_ROUTE)
     data object Profile : Destination(PROFILE_ROUTE)
     data object Places : Destination(PLACES_ROUTE)
+    data object AttractionDetails : Destination(ATTRACTION_DETAILS_ROUTE) {
+        fun createRoute(lat: Double, lon: Double) =
+            "route_attraction_details/$lat/$lon"
+    }
     data object Wishlist : Destination(WISHLIST_ROUTE)
     data object MyRoutes : Destination(MY_ROUTES_ROUTE)
     data object ReadyRoutes : Destination(READY_ROUTES_ROUTE)
@@ -20,6 +25,8 @@ sealed class Destination(val route: String) {
         private const val MAP_ROUTE = "route_map"
         private const val PROFILE_ROUTE = "route_profile"
         private const val PLACES_ROUTE = "route_places"
+        private const val ATTRACTION_DETAILS_ROUTE =
+            "route_attraction_details/{lat}/{lon}"
         private const val WISHLIST_ROUTE = "route_wishlist"
         private const val MY_ROUTES_ROUTE = "route_my_routes"
         private const val READY_ROUTES_ROUTE = "route_ready_routes"

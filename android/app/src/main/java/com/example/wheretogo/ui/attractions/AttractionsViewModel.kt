@@ -1,3 +1,4 @@
+
 package com.example.wheretogo.ui.attractions
 
 import android.app.Application
@@ -16,6 +17,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.collections.distinctBy
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import kotlinx.coroutines.withTimeoutOrNull
 
 class AttractionsViewModel(application: Application) :
     AndroidViewModel(application) {
@@ -32,15 +37,17 @@ class AttractionsViewModel(application: Application) :
     var errorMessage by mutableStateOf<String?>(null)
         private set
 
+    var selectedAttraction by mutableStateOf<PlaceItem?>(null)
+        private set
+
+    var isAttractionLoading by mutableStateOf(false)
+        private set
+
+    var attractionError by mutableStateOf<String?>(null)
+        private set
+
     val displayedPlaces: List<PlaceItem>
         get() = attractions
-
-    private val api = RetrofitClient.createApi(
-        "http://192.168.31.46:8080/"
-    )
-    //    private val api = RetrofitClient.createApi(
-//        "https://wheretogo-00tp.onrender.com/"
-//    )
 
     private var searchJob: Job? = null
 
@@ -69,16 +76,38 @@ class AttractionsViewModel(application: Application) :
         try {
             isLoading = attractions.isEmpty()
 
-            val (lat, lon) = getDeviceLocation(
-                getApplication()
-            )
+            val hasPermission = ContextCompat.checkSelfPermission(
+                getApplication(),
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED ||
+                    ContextCompat.checkSelfPermission(
+                        getApplication(),
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED
 
-            val response = api.getNearbyPlaces(
+            if (!hasPermission) {
+                errorMessage = "Нет разрешения на геолокацию"
+                return
+            }
+
+            val location = withTimeoutOrNull(10_000) {
+                getDeviceLocation(getApplication())
+            }
+
+            if (location == null) {
+                Log.e("ATTRACTIONS", "Координаты не получены за 10 секунд")
+                errorMessage = "Не удалось определить местоположение"
+                return
+            }
+
+            val (lat, lon) = location
+            Log.d("ATTRACTIONS", "Координаты: $lat, $lon")
+
+            val response = RetrofitClient.apiService.getNearbyPlaces(
                 lat = lat,
                 lon = lon,
                 radius = 5000
             )
-
             if (response.isSuccessful) {
 
                 val receivedPlaces = response.body().orEmpty()
@@ -138,14 +167,14 @@ class AttractionsViewModel(application: Application) :
         }
 
         searchJob = viewModelScope.launch {
-
             delay(400)
 
             try {
                 isLoading = true
                 errorMessage = null
 
-                val response = api.searchPlaces(query.trim())
+                val response = RetrofitClient.apiService
+                    .searchPlaces(query.trim())
 
                 if (response.isSuccessful) {
 
@@ -180,5 +209,65 @@ class AttractionsViewModel(application: Application) :
                 isLoading = false
             }
         }
+    }
+
+    fun loadAttraction(lat: Double, lon: Double) {
+        viewModelScope.launch {
+            try {
+                isAttractionLoading = true
+                attractionError = null
+                selectedAttraction = null
+
+                val response = RetrofitClient.apiService
+                    .getPlaceDetails(lat, lon)
+
+                if (response.isSuccessful) {
+                    selectedAttraction = response.body()
+
+                    if (selectedAttraction == null) {
+                        attractionError =
+                            "Данные достопримечательности отсутствуют"
+                    }
+                } else {
+                    attractionError =
+                        "Не удалось загрузить достопримечательность: ${response.code()}"
+                }
+
+            } catch (e: CancellationException) {
+                throw e
+
+            } catch (e: Exception) {
+                Log.e(
+                    "ATTRACTION_DETAILS",
+                    "Ошибка загрузки",
+                    e
+                )
+
+                attractionError = "Ошибка загрузки достопримечательности"
+
+            } finally {
+                isAttractionLoading = false
+            }
+        }
+    }
+    // Выбор места (с карты или из списка): данные уже есть, запрос не нужен
+    fun selectAttraction(place: PlaceItem) {
+        selectedAttraction = place
+        attractionError = null
+        isAttractionLoading = false
+    }
+
+    // Запасной вариант: грузим с сервера, только если нужного места нет в памяти
+    fun loadAttractionIfNeeded(lat: Double, lon: Double) {
+        val current = selectedAttraction
+        val curLat = current?.latitude
+        val curLon = current?.longitude
+        if (curLat != null && curLon != null &&
+            kotlin.math.abs(curLat - lat) < 1e-6 &&
+            kotlin.math.abs(curLon - lon) < 1e-6
+        ) {
+            return
+        }
+        loadAttraction(lat, lon)
     }
 }
