@@ -1,8 +1,8 @@
+
 package com.example.wheretogobackend.controller;
 
 import com.example.wheretogobackend.dto.AttractionDto;
 import com.example.wheretogobackend.service.AttractionService;
-import com.example.wheretogobackend.service.WikipediaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,22 +16,24 @@ public class PlaceController {
 
     private final AttractionService placeService;
 
+    // Получение достопримечательностей поблизости
     @GetMapping("/nearby")
     public List<AttractionDto> getNearbyPlaces(
             @RequestParam double lat,
             @RequestParam double lon,
             @RequestParam double radius
     ) {
-
         return placeService.getAllNearbyPlaces(lat, lon, radius);
     }
 
+    // Получение подробной информации о достопримечательности
     @GetMapping("/details")
     public ResponseEntity<AttractionDto> getPlaceDetails(
             @RequestParam double lat,
             @RequestParam double lon
     ) {
-        AttractionDto attraction = placeService.getPlaceByCoordinates(lat, lon);
+        AttractionDto attraction =
+                placeService.getPlaceByCoordinates(lat, lon);
 
         if (attraction == null) {
             return ResponseEntity.notFound().build();
@@ -39,6 +41,8 @@ public class PlaceController {
 
         return ResponseEntity.ok(attraction);
     }
+
+    // Поиск достопримечательностей
     @GetMapping("/search")
     public List<AttractionDto> searchPlaces(
             @RequestParam String query
