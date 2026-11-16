@@ -1,6 +1,8 @@
 package com.example.wheretogo.validation
 
-import com.example.wheretogo.validation.FieldError.EMPTY
+import com.example.wheretogo.ui.auth.validation.FieldError.EMPTY
+import com.example.wheretogo.ui.auth.validation.LoginErrors
+import com.example.wheretogo.ui.auth.validation.LoginValidator
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

@@ -1,5 +1,6 @@
 package com.example.wheretogo.tools
 
+import com.example.wheretogo.ui.map.OfflineProgress
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

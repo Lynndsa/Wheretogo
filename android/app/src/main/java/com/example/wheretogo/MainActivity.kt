@@ -28,11 +28,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.rememberNavController
-import com.example.wheretogo.navigation.AppNavHost
+import com.example.wheretogo.ui.navigation.AppNavHost
 import com.example.wheretogo.ui.theme.ButtonColor
 import com.example.wheretogo.ui.theme.ButtonTextStyle
 import com.example.wheretogo.ui.theme.LinkTextStyle

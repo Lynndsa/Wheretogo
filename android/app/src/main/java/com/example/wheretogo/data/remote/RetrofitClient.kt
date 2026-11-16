@@ -1,0 +1,46 @@
+package com.example.wheretogo.data.remote
+
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.converter.scalars.ScalarsConverterFactory
+import java.util.concurrent.TimeUnit
+
+object RetrofitClient {
+     private const val BASE_URL = "http://192.168.31.46:8080/"
+
+//    private const val BASE_URL = "https://wheretogo-00tp.onrender.com/"
+
+    private val loggingInterceptor = HttpLoggingInterceptor().apply {
+        level = HttpLoggingInterceptor.Level.BODY
+    }
+
+    private val okHttpClient = OkHttpClient.Builder()
+        .addInterceptor { chain ->
+            chain.proceed(
+
+
+                chain.request().newBuilder()
+                    .header("Accept-Language", "ru")
+                    .build()
+            )
+        }
+        .addInterceptor(loggingInterceptor)
+        .connectTimeout(200, TimeUnit.SECONDS)
+        .readTimeout(200, TimeUnit.SECONDS)
+        .writeTimeout(200, TimeUnit.SECONDS)
+        .build()
+
+    /** Фабрика с подменяемым адресом: в тестах сюда подставляется MockWebServer. */
+    fun createApi(baseUrl: String, client: OkHttpClient = okHttpClient): ApiService =
+        Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .client(client)
+            .addConverterFactory(ScalarsConverterFactory.create()) // Добавление конвертера для простых типов данных
+            .addConverterFactory(GsonConverterFactory.create()) // Добавление конвертера для объектов
+            .build()
+            .create(ApiService::class.java)
+
+    val apiService: ApiService by lazy { createApi(BASE_URL) }
+}
