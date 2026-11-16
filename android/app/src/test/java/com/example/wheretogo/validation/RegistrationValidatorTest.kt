@@ -1,6 +1,10 @@
 package com.example.wheretogo.validation
 
-import com.example.wheretogo.validation.FieldError.*
+import com.example.wheretogo.ui.auth.validation.FieldError
+import com.example.wheretogo.ui.auth.validation.FieldError.*
+import com.example.wheretogo.ui.auth.validation.RegistrationErrors
+import com.example.wheretogo.ui.auth.validation.RegistrationForm
+import com.example.wheretogo.ui.auth.validation.RegistrationValidator
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -105,7 +109,7 @@ class RegistrationValidatorTest {
             valid.copy(phone = "123") to RegistrationErrors(phone = INVALID_FORMAT),
             valid.copy(email = "x") to RegistrationErrors(email = INVALID_FORMAT),
             valid.copy(password = "abc", confirmPassword = "abc") to
-                RegistrationErrors(password = TOO_SHORT),
+                    RegistrationErrors(password = TOO_SHORT),
             valid.copy(confirmPassword = "zzzz1111") to RegistrationErrors(confirmPassword = MISMATCH)
         )
         cases.forEach { (form, expected) ->

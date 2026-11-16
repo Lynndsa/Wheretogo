@@ -1,5 +1,9 @@
 package com.example.wheretogo.network
 
+import com.example.wheretogo.data.local.ApiService
+import com.example.wheretogo.data.local.remote.RetrofitClient
+import com.example.wheretogo.data.remote.TestRequest
+import com.example.wheretogo.data.remote.TestResponse
 import com.google.gson.Gson
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse

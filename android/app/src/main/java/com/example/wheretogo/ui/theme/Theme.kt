@@ -45,7 +45,7 @@ private val LightColorScheme = lightColorScheme(
 // Заголовок экрана
 val TextHeadStyle = TextStyle(
     textAlign = TextAlign.Center,
-    fontSize = 30.sp,
+    fontSize = 25.sp,
     color = ButtonColor,
     fontStyle = FontStyle.Italic,
     fontWeight = FontWeight.Bold

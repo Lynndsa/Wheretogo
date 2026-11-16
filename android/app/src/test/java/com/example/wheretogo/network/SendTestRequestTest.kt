@@ -1,5 +1,7 @@
 package com.example.wheretogo.network
 
+import com.example.wheretogo.data.local.remote.RetrofitClient
+import com.example.wheretogo.data.remote.TestRequest
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
