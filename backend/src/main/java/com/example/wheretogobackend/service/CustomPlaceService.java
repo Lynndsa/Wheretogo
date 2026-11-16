@@ -14,7 +14,6 @@ public class CustomPlaceService {
 
     private final DataRepository dataRepository;
 
-
     // получение всех сохраненныъ мест
     public List<DataEntity> getAllPlaces() {
         return dataRepository.findAll();
