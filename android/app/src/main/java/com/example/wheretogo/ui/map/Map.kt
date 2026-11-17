@@ -36,11 +36,15 @@ import com.example.wheretogo.data.model.PlaceItem
 import com.example.wheretogo.data.local.OfflineMapManager
 import com.example.wheretogo.data.remote.RetrofitClient
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.geometry.LatLngBounds
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
@@ -122,55 +126,54 @@ fun MapScreen(  onPlaceClick: (PlaceItem) -> Unit = {}) {
         }
     }
 
-    // Динамическая загрузка мест вокруг центра экрана каждые 5 секунд
-    LaunchedEffect(isLocationGranted, currentMapCenter, currentRadius) {
-        while (isActive) {
-            val center = currentMapCenter ?: if (isLocationGranted) {
-                val (lat, lon) = getDeviceLocation(context)
-                LatLng(lat, lon)
-            } else {
-                LatLng(59.9386, 30.3141) // По умолчанию СПб
-            }
+    // Подгрузка мест, когда видимая область подходит к границе загруженного круга
+    var loadedCenter by remember { mutableStateOf<LatLng?>(null) }
+    var loadedRadius by remember { mutableIntStateOf(0) }
 
-            try {
-                val response = RetrofitClient.apiService.getNearbyPlaces(
-                    lat = center.latitude,
-                    lon = center.longitude,
-                    radius = currentRadius
-                )
-                Log.d("MAP", "Код: ${response.code()}, мест в радиусе ${currentRadius}м от (${center.latitude}, ${center.longitude}): ${response.body()?.size}")
-                if (response.isSuccessful) {
-                    val receivedPlaces = response.body().orEmpty()
-
-                    Log.d("MAP", "Получено мест: ${receivedPlaces.size}")
-
-                    receivedPlaces
-                        .groupBy { it.title?.trim()?.lowercase() ?: "" }
-                        .filterValues { it.size > 1 }
-                        .forEach { (title, duplicates) ->
-                            Log.w("MAP", "Дубль: $title, количество: ${duplicates.size}")
-                        }
-
-                    val uniqueByTitle = receivedPlaces.distinctBy {
-                        it.title
-                            ?.trim()
-                            ?.lowercase()
-                            ?.replace(Regex("\\s+"), " ")
-                    }
-
-                    places = uniqueByTitle.distinctBy {
-                        Pair(
-                            it.latitude,
-                            it.longitude
-                        )
-                    }
+    @OptIn(FlowPreview::class)
+    LaunchedEffect(isLocationGranted) {
+        snapshotFlow { currentMapCenter to currentRadius }
+            .debounce(300.milliseconds)
+            .collectLatest { (mapCenter, visibleRadius) ->
+                val center = mapCenter ?: if (isLocationGranted) {
+                    val (lat, lon) = getDeviceLocation(context)
+                    LatLng(lat, lon)
+                } else {
+                    LatLng(59.9386, 30.3141)
                 }
-            } catch (e: Exception) {
-                Log.e("MAP", "Ошибка загрузки мест каждые 5 сек", e)
-            }
 
-            delay(5000.milliseconds)
-        }
+                val lc = loadedCenter
+                val distanceToLoadedCenter = lc?.let { center.distanceTo(it) } ?: Double.MAX_VALUE
+
+                val needReload = lc == null ||
+                        distanceToLoadedCenter + visibleRadius > loadedRadius * 0.8
+
+                if (!needReload) return@collectLatest
+
+                val radiusToLoad = maxOf(5000, visibleRadius * 2).coerceAtMost(30000)
+
+                try {
+                    val response = RetrofitClient.apiService.getNearbyPlaces(
+                        lat = center.latitude,
+                        lon = center.longitude,
+                        radius = radiusToLoad
+                    )
+                    if (response.isSuccessful) {
+                        val received = response.body().orEmpty()
+                        places = received
+                            .distinctBy { it.title?.trim()?.lowercase()?.replace(Regex("\\s+"), " ") }
+                            .distinctBy { Pair(it.latitude, it.longitude) }
+
+                        loadedCenter = center
+                        loadedRadius = radiusToLoad
+                        Log.d("MAP", "Загружено ${places.size} мест, радиус $radiusToLoad м")
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.e("MAP", "Ошибка загрузки мест", e)
+                }
+            }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {

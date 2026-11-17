@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import kotlin.collections.distinctBy
 import android.Manifest
 import android.content.pm.PackageManager
+import android.location.Location
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration.Companion.milliseconds
@@ -56,10 +57,20 @@ class AttractionsViewModel(application: Application) :
         startLoading()
     }
 
+    // Точка, вокруг которой места были загружены в последний раз
+    private var loadedLat: Double? = null
+    private var loadedLon: Double? = null
+
+    private companion object {
+        const val LOAD_RADIUS_METERS = 5000
+        // Перезагружаем, когда пользователь ушёл от точки загрузки больше чем на 2 км
+        const val RELOAD_DISTANCE_METERS = 2000f
+    }
+
     fun updateSearchQuery(query: String) {
         searchQuery = query
     }
-
+    // ПОМЕНЯТЬ, ПЫТАЕТСЯ ЗАГРУЖАТЬ МЕСТА КАЖДЫЕ 5 СЕКУНД
     private fun startLoading() {
         viewModelScope.launch {
             while (isActive) {
@@ -104,25 +115,31 @@ class AttractionsViewModel(application: Application) :
             val (lat, lon) = location
             Log.d("ATTRACTIONS", "Координаты: $lat, $lon")
 
+            // Если места уже загружены и пользователь не ушёл далеко, запрос не нужен
+            val lastLat = loadedLat
+            val lastLon = loadedLon
+            if (lastLat != null && lastLon != null && attractions.isNotEmpty()) {
+                val result = FloatArray(1)
+                Location.distanceBetween(lastLat, lastLon, lat, lon, result)
+                if (result[0] < RELOAD_DISTANCE_METERS) {
+                    return
+                }
+            }
+
             val response = RetrofitClient.apiService.getNearbyPlaces(
                 lat = lat,
                 lon = lon,
-                radius = 5000
+                radius = LOAD_RADIUS_METERS
             )
             if (response.isSuccessful) {
-
                 val receivedPlaces = response.body().orEmpty()
 
                 attractions = receivedPlaces
-                    .distinctBy {
-                        it.title
-                            ?.trim()
-                            ?.lowercase()
-                            ?.replace(Regex("\\s+"), " ")
-                    }
-                    .distinctBy {
-                        Pair(it.latitude, it.longitude)
-                    }
+                    .distinctBy { it.title?.trim()?.lowercase()?.replace(Regex("\\s+"), " ") }
+                    .distinctBy { Pair(it.latitude, it.longitude) }
+
+                loadedLat = lat
+                loadedLon = lon
 
                 errorMessage = null
 
