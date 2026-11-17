@@ -25,8 +25,6 @@ interface ApiService {
         @Query("radius") radius: Int
     ): Response<List<PlaceItem>>
 
-    @GET("api/v1/custom-places")
-    suspend fun getAllPlaceDB(): Response<List<PlaceItem>>
 
     @POST("api/auth/login")
     suspend fun login(
