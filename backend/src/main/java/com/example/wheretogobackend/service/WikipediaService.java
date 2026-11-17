@@ -214,7 +214,7 @@ public class WikipediaService {
                     .uri(url)
                     .header(
                             "User-Agent",
-                            "WhereToGoBackend/1.0 (contact@example.com)"
+                            "WhereToGoBackend/1.0 (ladaromanova83@gmail.com)"
                     )
                     .retrieve()
                     .bodyToMono(JsonNode.class)
