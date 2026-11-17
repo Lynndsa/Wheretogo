@@ -43,7 +43,6 @@ import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.geometry.LatLngBounds
 import kotlin.time.Duration.Companion.milliseconds
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(  onPlaceClick: (PlaceItem) -> Unit = {}) {
     if (LocalInspectionMode.current) {
@@ -60,7 +59,7 @@ fun MapScreen(  onPlaceClick: (PlaceItem) -> Unit = {}) {
 
     // Центр и радиус видимой области карты
     var currentMapCenter by remember { mutableStateOf<LatLng?>(null) }
-    var currentRadius by remember { mutableStateOf(5000) }
+    var currentRadius by remember { mutableIntStateOf(5000) }
 
     // Выбранное место (для карточки снизу)
     var selectedPlace by remember { mutableStateOf<PlaceItem?>(null) }
@@ -190,66 +189,10 @@ fun MapScreen(  onPlaceClick: (PlaceItem) -> Unit = {}) {
             onMapClick = { selectedPlace = null }
         )
 
-        // Карточка выбранного места снизу
-        AnimatedVisibility(
-            visible = selectedPlace != null,
-            modifier = Modifier.align(Alignment.BottomCenter),
-            enter = slideInVertically { it } + fadeIn(),
-            exit = slideOutVertically { it } + fadeOut()
-        ) {
-            // Последнее непустое место, чтобы текст не пропадал во время анимации закрытия
-            val shown = selectedPlace ?: lastShownPlace
-            if (shown != null) {
-                PlaceInfoCard(
-                    place = shown,
-                    onClose = { selectedPlace = null }
-                )
-            }
-        }
     }
 }
 
-@Composable
-private fun PlaceInfoCard(
-    place: PlaceItem,
-    onClose: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = place.title?.takeIf { it.isNotBlank() } ?: "Без названия",
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = place.address?.takeIf { it.isNotBlank() } ?: "Адрес не указан",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            IconButton(onClick = onClose) {
-                Icon(Icons.Default.Close, contentDescription = "Закрыть")
-            }
-        }
-    }
-}
+
 
 
  suspend fun getDeviceLocation(context: Context): Pair<Double, Double> {

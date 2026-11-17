@@ -21,6 +21,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.time.Duration.Companion.milliseconds
 
 class AttractionsViewModel(application: Application) :
     AndroidViewModel(application) {
@@ -67,7 +68,7 @@ class AttractionsViewModel(application: Application) :
                     loadAttractions()
                 }
 
-                delay(5000)
+                delay(5000.milliseconds)
             }
         }
     }
@@ -90,7 +91,7 @@ class AttractionsViewModel(application: Application) :
                 return
             }
 
-            val location = withTimeoutOrNull(10_000) {
+            val location = withTimeoutOrNull(10_000.milliseconds) {
                 getDeviceLocation(getApplication())
             }
 
@@ -167,7 +168,7 @@ class AttractionsViewModel(application: Application) :
         }
 
         searchJob = viewModelScope.launch {
-            delay(400)
+            delay(400.milliseconds)
 
             try {
                 isLoading = true
