@@ -9,6 +9,16 @@ import java.util.List;
 @Repository
 public interface DataRepository extends JpaRepository<DataEntity, Long> {
 
+    boolean existsByLatitudeAndLongitude(
+            Double latitude,
+            Double longitude
+    );
+
+    boolean existsByNameAndLatitudeAndLongitude(
+            String name,
+            Double latitude,
+            Double longitude
+    );
 
 
 }

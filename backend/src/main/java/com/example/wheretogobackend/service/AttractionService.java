@@ -21,6 +21,7 @@ public class AttractionService {
     private final DataRepository dataRepository;
     private final GeoapifyService geoapifyService;
     private final WikipediaService wikipediaService;
+    private final AttractionImportService attractionImportService;
 
     // Поля с инициализацией не попадают в конструктор Lombok
     private final ExecutorService executor = Executors.newFixedThreadPool(8);
@@ -329,5 +330,65 @@ public class AttractionService {
                 .map(CompletableFuture::join)
                 .filter(Objects::nonNull)
                 .toList();
+    }
+
+    public Map<String, Integer> importNearbyPlaces(
+            Double lat,
+            Double lon,
+            Double radiusMeters,
+            int limit
+    ) {
+        GeoapifyResponseDto data =
+                geoapifyService.getNearbyPlacesForImport(
+                        lat, lon, radiusMeters, limit
+                );
+
+        int found = 0;
+        int saved = 0;
+        int skipped = 0;
+
+        if (data == null || data.getFeatures() == null) {
+            return Map.of(
+                    "found", 0,
+                    "saved", 0,
+                    "skipped", 0
+            );
+        }
+
+        for (GeoapifyResponseDto.Feature feature : data.getFeatures()) {
+
+            if (found >= limit) {
+                break;
+            }
+
+            found++;
+
+            if (feature == null || feature.getProperties() == null) {
+                skipped++;
+                continue;
+            }
+
+            try {
+                AttractionDto dto = mapCached(feature.getProperties());
+
+                if (dto != null && attractionImportService.saveAttraction(dto)) {
+                    saved++;
+                } else {
+                    skipped++;
+                }
+
+            } catch (Exception e) {
+                skipped++;
+                System.err.println(
+                        "Ошибка импорта места: " + e.getMessage()
+                );
+            }
+        }
+
+        return Map.of(
+                "found", found,
+                "saved", saved,
+                "skipped", skipped
+        );
     }
 }
