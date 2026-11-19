@@ -38,4 +38,7 @@ public class DataEntity {
 
     @Column(name = "id_attraction")
     private Integer idAttraction;
+
+    @Column(name = "wikipedia_url", length = 500)
+    private String wikipediaUrl;
 }
