@@ -16,13 +16,13 @@ public class CustomPlaceController {
 
     private final CustomPlaceService customPlaceService;
 
-    // Получение всех мест из MySQL
+    // Получение всех достопримечательностей
     @GetMapping
     public List<DataEntity> getAllPlaces() {
         return customPlaceService.getAllPlaces();
     }
 
-    // Получение места по ID
+    // Получение подробной информации о достопримечательности
     @GetMapping("/{id}")
     public ResponseEntity<DataEntity> getPlaceById(
             @PathVariable Long id
@@ -30,15 +30,5 @@ public class CustomPlaceController {
         return customPlaceService.getPlaceById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
-    }
-
-    // Получение мест поблизости ТОЛЬКО из MySQL
-    @GetMapping("/nearby")
-    public List<DataEntity> getNearbyPlaces(
-            @RequestParam double lat,
-            @RequestParam double lon,
-            @RequestParam(defaultValue = "5000") double radius
-    ) {
-        return customPlaceService.getNearbyPlaces(lat, lon, radius);
     }
 }
