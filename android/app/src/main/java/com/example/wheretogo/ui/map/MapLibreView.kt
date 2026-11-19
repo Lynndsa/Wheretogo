@@ -2,7 +2,6 @@ package com.example.wheretogo.ui.map
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.toColorInt
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -58,22 +58,27 @@ import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.Point
-import androidx.core.graphics.toColorInt
+import kotlin.math.asin
+import kotlin.math.cos
+import kotlin.math.pow
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 // ---------- Идентификаторы источника данных и слоёв карты ----------
 // Источник данных (GeoJSON) один — в нём лежат все места. Поверх него строятся четыре слоя;
 // по этим идентификаторам слои находят при кликах (queryRenderedFeatures).
 private const val PLACES_SOURCE = "places-source"
-private const val PLACES_LAYER = "places-layer"                       // одиночные точки
-private const val LABELS_LAYER = "places-labels-layer"                // подписи одиночных точек
-private const val CLUSTER_LAYER = "places-cluster-layer"              // кружки кластеров
-private const val CLUSTER_COUNT_LAYER = "places-cluster-count-layer"  // число в кластере
+private const val PLACES_LAYER = "places-layer"
+private const val LABELS_LAYER = "places-labels-layer"
+private const val CLUSTER_LAYER = "places-cluster-layer"
+private const val CLUSTER_COUNT_LAYER = "places-cluster-count-layer"
 
 // Ограничения радиуса видимой области (в метрах), который карта сообщает наружу.
 // Нижняя граница нужна, чтобы при сильном приближении не слать слишком маленький радиус;
 // верхняя — чтобы при отдалении не запрашивать слишком много данных.
 private const val MIN_RADIUS_METERS = 1000
 private const val MAX_RADIUS_METERS = 50000
+private const val DUPLICATE_DISTANCE_METERS = 30.0
 
 /**
  * Компонент карты на основе MapLibre (векторная карта с кластеризацией мест).
@@ -111,10 +116,8 @@ fun MapLibreView(
     initialCenter: LatLng = LatLng(59.9386, 30.3141),
     initialZoom: Double = 11.0,
     isLocationGranted: Boolean = false,
-    /** Центр карты и радиус видимой области в метрах */
     onCameraCenterChanged: (LatLng, Int) -> Unit = { _, _ -> },
     onPlaceClick: (PlaceItem) -> Unit = {},
-    /** Клик по пустому месту карты (не по точке и не по кластеру) */
     onMapClick: () -> Unit = {}
 ) {
     // В предпросмотре Android Studio настоящая карта не работает — показываем серую заглушку.
@@ -141,33 +144,45 @@ fun MapLibreView(
     val currentOnMapClick by rememberUpdatedState(onMapClick)
     val currentOnCameraCenterChanged by rememberUpdatedState(onCameraCenterChanged)
 
+    // Список мест в том же порядке, в котором они отображаются на карте
+    var displayedPlaces by remember {
+        mutableStateOf(emptyList<PlaceItem>())
+    }
+
+    val currentDisplayedPlaces by rememberUpdatedState(displayedPlaces)
+
     // Однократная инициализация библиотеки MapLibre. setConnected(true) принудительно
     // сообщает ей, что сеть доступна (отключает собственное определение состояния сети).
     remember {
-        MapLibre.getInstance(context).also { MapLibre.setConnected(true) }
+        MapLibre.getInstance(context).also {
+            MapLibre.setConnected(true)
+        }
     }
 
-    // map — объект карты (null, пока MapView не создал её асинхронно).
-    // styleReady — стиль загружен, и в него можно добавлять источники и слои.
-    var map by remember { mutableStateOf<MapLibreMap?>(null) }
-    var styleReady by remember { mutableStateOf(false) }
+    var map by remember {
+        mutableStateOf<MapLibreMap?>(null)
+    }
+
+    var styleReady by remember {
+        mutableStateOf(false)
+    }
 
     // Создание MapView один раз. onCreate(null) вызывается вручную, остальные события
     // жизненного цикла (onStart, onResume и т.д.) пробрасываются ниже в DisposableEffect.
     val mapView = remember {
         MapView(context).apply {
             onCreate(null)
+
             getMapAsync { m ->
                 map = m
+
                 // Начальное положение камеры.
                 m.cameraPosition = CameraPosition.Builder()
                     .target(initialCenter)
                     .zoom(initialZoom)
                     .build()
 
-                // Загрузка стиля. Лямбда вызывается, когда стиль готов.
                 m.setStyle(styleUrl) { style ->
-                    Log.d("MAP_TEST", "Стиль загружен")
 
                     // Источник с кластеризацией. Пока он пуст; точки в него попадают
                     // в блоке «Обновление точек при изменении списка» ниже.
@@ -176,8 +191,8 @@ fun MapLibreView(
                             PLACES_SOURCE,
                             GeoJsonOptions()
                                 .withCluster(true)
-                                .withClusterRadius(60)   // радиус объединения в пикселях
-                                .withClusterMaxZoom(14)  // с зума 15 кластеров уже нет
+                                .withClusterRadius(60)
+                                .withClusterMaxZoom(14)
                         )
                     )
 
@@ -195,8 +210,14 @@ fun MapLibreView(
                                     Expression.step(
                                         Expression.get("point_count"),
                                         Expression.color("#42A5F5".toColorInt()),
-                                        Expression.stop(10, Expression.color("#FB8C00".toColorInt())),
-                                        Expression.stop(50, Expression.color("#E53935".toColorInt()))
+                                        Expression.stop(
+                                            10,
+                                            Expression.color("#FB8C00".toColorInt())
+                                        ),
+                                        Expression.stop(
+                                            50,
+                                            Expression.color("#E53935".toColorInt())
+                                        )
                                     )
                                 ),
                                 circleRadius(
@@ -219,7 +240,11 @@ fun MapLibreView(
                         SymbolLayer(CLUSTER_COUNT_LAYER, PLACES_SOURCE)
                             .withFilter(isCluster)
                             .withProperties(
-                                textField(Expression.toString(Expression.get("point_count_abbreviated"))),
+                                textField(
+                                    Expression.toString(
+                                        Expression.get("point_count_abbreviated")
+                                    )
+                                ),
                                 textSize(13f),
                                 textColor("#FFFFFF"),
                                 textAllowOverlap(true),
@@ -272,6 +297,7 @@ fun MapLibreView(
     // цикла (экрана целиком); если компонент просто уйдёт из композиции раньше, MapView
     // уничтожен не будет.
     val lifecycleOwner = LocalLifecycleOwner.current
+
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
@@ -283,132 +309,209 @@ fun MapLibreView(
                 else -> {}
             }
         }
+
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
-    // Обновление точек при изменении списка.
-    // Эффект срабатывает при смене списка places и когда стиль стал готов.
-    // Каждое место превращается в GeoJSON-объект (Feature) с двумя свойствами:
-    //  - index — позиция места в списке; по нему при клике находится исходный PlaceItem
-    //    (см. следующий блок);
-    //  - title — название для подписи на карте.
-    // Места без координат пропускаются (mapIndexedNotNull), но индекс остаётся позицией
-    // в исходном списке, так что соответствие сохраняется.
+    // Удаление дублей и отрисовка мест
     LaunchedEffect(places, styleReady) {
         if (!styleReady) return@LaunchedEffect
 
-        val features = places.mapIndexedNotNull { index, p ->
-            val lat = p.latitude ?: return@mapIndexedNotNull null
-            val lon = p.longitude ?: return@mapIndexedNotNull null
+        val uniquePlaces = mutableListOf<PlaceItem>()
 
-            // Внимание: в GeoJSON сначала долгота, потом широта (lon, lat).
-            Feature.fromGeometry(Point.fromLngLat(lon, lat)).apply {
-                addNumberProperty("index", index)
-                addStringProperty("title", p.title ?: "")
+        places.forEach { place ->
+            val lat = place.latitude ?: return@forEach
+            val lon = place.longitude ?: return@forEach
+            val title = place.title
+                ?.trim()
+                ?.lowercase()
+                ?.takeIf { it.isNotEmpty() }
+                ?: return@forEach
+
+            val isDuplicate = uniquePlaces.any { existing ->
+                val existingTitle = existing.title
+                    ?.trim()
+                    ?.lowercase()
+
+                if (existingTitle != title) {
+                    false
+                } else {
+                    val existingLat = existing.latitude ?: return@any false
+                    val existingLon = existing.longitude ?: return@any false
+
+                    distanceMeters(
+                        lat,
+                        lon,
+                        existingLat,
+                        existingLon
+                    ) <= DUPLICATE_DISTANCE_METERS
+                }
+            }
+
+            if (!isDuplicate) {
+                uniquePlaces.add(place)
             }
         }
 
-        // Заменяем данные источника; слои сами перерисуются, а кластеры пересчитаются.
-        map?.style?.getSourceAs<GeoJsonSource>(PLACES_SOURCE)
-            ?.setGeoJson(FeatureCollection.fromFeatures(features))
+        val features = uniquePlaces.mapIndexed { index, place ->
+            Feature.fromGeometry(
+                Point.fromLngLat(
+                    place.longitude!!,
+                    place.latitude!!
+                )
+            ).apply {
+                addNumberProperty("index", index)
+                addStringProperty("title", place.title ?: "")
+            }
+        }
 
-        Log.d("MAP_TEST", "Отрисовано точек: ${features.size}")
+        map?.style
+            ?.getSourceAs<GeoJsonSource>(PLACES_SOURCE)
+            ?.setGeoJson(
+                FeatureCollection.fromFeatures(features)
+            )
+
+        displayedPlaces = uniquePlaces
     }
 
-    // Клик: по кластеру приближаем, по точке открываем место.
-    // Слушатель регистрируется один раз, когда стиль готов (поэтому для актуальных данных
-    // используются currentPlaces и currentOn..., см. rememberUpdatedState выше).
-    // Возврат true означает «клик обработан», false — «не обработан».
+    // Обработка нажатий по карте
     LaunchedEffect(styleReady) {
         val m = map ?: return@LaunchedEffect
         if (!styleReady) return@LaunchedEffect
 
         m.addOnMapClickListener { latLng ->
-            // Перевод координат клика в пиксели экрана — нужен для запроса слоёв под пальцем.
             val screenPoint = m.projection.toScreenLocation(latLng)
 
-            // 1. Клик по кластеру: приближаем карту на 2 уровня масштаба с анимацией 400 мс.
-            val cluster = m.queryRenderedFeatures(screenPoint, CLUSTER_LAYER).firstOrNull()
+            // 1. Клик по кластеру
+            val cluster = m.queryRenderedFeatures(
+                screenPoint,
+                CLUSTER_LAYER
+            ).firstOrNull()
+
             if (cluster != null) {
                 val zoom = m.cameraPosition.zoom + 2.0
-                m.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoom), 400)
+
+                m.animateCamera(
+                    CameraUpdateFactory.newLatLngZoom(latLng, zoom),
+                    400
+                )
+
                 return@addOnMapClickListener true
             }
 
-            // 2. Клик по одиночной точке: читаем сохранённое свойство index и берём из
-            // списка соответствующее место, затем вызываем onPlaceClick.
-            val hit = m.queryRenderedFeatures(screenPoint, PLACES_LAYER).firstOrNull()
-            val index = hit?.getNumberProperty("index")?.toInt()
+            // 2. Клик по одиночной точке
+            val hit = m.queryRenderedFeatures(
+                screenPoint,
+                PLACES_LAYER
+            ).firstOrNull()
+
+            val index = hit
+                ?.getNumberProperty("index")
+                ?.toInt()
+
             if (index != null) {
-                currentPlaces.getOrNull(index)?.let(currentOnPlaceClick)
+                currentDisplayedPlaces
+                    .getOrNull(index)
+                    ?.let(currentOnPlaceClick)
+
                 true
             } else {
-                // 3. Клик по пустому месту: сообщаем наружу (в MapScreen это сбрасывает выбор места).
                 currentOnMapClick()
                 false
             }
         }
     }
 
-    // Отслеживание центра и радиуса видимой области.
-    // CameraIdle срабатывает, когда камера остановилась после движения или зума.
-    // Радиус — расстояние от центра карты до северо-восточного угла видимой области, в метрах.
-    // Результат ограничивается диапазоном MIN_RADIUS_METERS..MAX_RADIUS_METERS и уходит в
-    // onCameraCenterChanged (в MapScreen он запускает подгрузку мест).
+    // Отслеживание центра и радиуса видимой области
     LaunchedEffect(styleReady) {
         val m = map ?: return@LaunchedEffect
         if (!styleReady) return@LaunchedEffect
 
         m.addOnCameraIdleListener {
-            val center = m.cameraPosition.target ?: return@addOnCameraIdleListener
+            val center = m.cameraPosition.target
+                ?: return@addOnCameraIdleListener
+
             val bounds = m.projection.visibleRegion.latLngBounds
-            val radiusMeters = center.distanceTo(bounds.northEast).toInt()
-                .coerceIn(MIN_RADIUS_METERS, MAX_RADIUS_METERS)
+
+            val radiusMeters = center
+                .distanceTo(bounds.northEast)
+                .toInt()
+                .coerceIn(
+                    MIN_RADIUS_METERS,
+                    MAX_RADIUS_METERS
+                )
+
             currentOnCameraCenterChanged(center, radiusMeters)
         }
     }
 
-    // Включение геолокации MapLibre при наличии разрешения.
-    // Эффект срабатывает при смене isLocationGranted (например, пользователь только что
-    // разрешил доступ в диалоге из MapScreen) или готовности стиля.
-    // Разрешения проверяются ещё раз напрямую — на случай, если флаг устарел.
+    // Включение геолокации MapLibre при наличии разрешения
     LaunchedEffect(isLocationGranted, styleReady) {
         val m = map ?: return@LaunchedEffect
         val style = m.style ?: return@LaunchedEffect
-        if (!styleReady || !isLocationGranted) return@LaunchedEffect
+
+        if (!styleReady || !isLocationGranted) {
+            return@LaunchedEffect
+        }
 
         val hasFinePermission = ContextCompat.checkSelfPermission(
-            context, Manifest.permission.ACCESS_FINE_LOCATION
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
+
         val hasCoarsePermission = ContextCompat.checkSelfPermission(
-            context, Manifest.permission.ACCESS_COARSE_LOCATION
+            context,
+            Manifest.permission.ACCESS_COARSE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
 
         if (hasFinePermission || hasCoarsePermission) {
             try {
                 val locationComponent = m.locationComponent
-                // Активация выполняется один раз; повторный вызов вызвал бы ошибку.
                 if (!locationComponent.isLocationComponentActivated) {
                     locationComponent.activateLocationComponent(
-                        LocationComponentActivationOptions.builder(context, style).build()
+                        LocationComponentActivationOptions.builder(
+                            context,
+                            style
+                        ).build()
                     )
                 }
+
                 locationComponent.isLocationComponentEnabled = true
-                // TRACKING — камера следует за пользователем (в том числе сразу при включении
-                // передвигает карту к его положению). NORMAL — обычный синий маркер без направления.
                 locationComponent.cameraMode = CameraMode.TRACKING
                 locationComponent.renderMode = RenderMode.NORMAL
-            } catch (e: Exception) {
-                Log.e("MAP_TEST", "Ошибка включения геолокации: ${e.message}")
+
+            } catch (_: Exception) {
+                // Геолокация недоступна — карта продолжает работать
             }
         }
     }
 
-    // Встраивание классического View (MapView) в Compose-иерархию.
-    // factory возвращает уже созданный выше mapView, а не создаёт новый.
     AndroidView(
         factory = { mapView },
         modifier = modifier.fillMaxSize()
     )
+}
+
+// Расстояние между двумя координатами в метрах
+private fun distanceMeters(
+    lat1: Double,
+    lon1: Double,
+    lat2: Double,
+    lon2: Double
+): Double {
+    val earthRadius = 6371000.0
+
+    val dLat = Math.toRadians(lat2 - lat1)
+    val dLon = Math.toRadians(lon2 - lon1)
+
+    val a = sin(dLat / 2).pow(2.0) +
+            cos(Math.toRadians(lat1)) *
+            cos(Math.toRadians(lat2)) *
+            sin(dLon / 2).pow(2.0)
+
+    return 2 * earthRadius * asin(sqrt(a))
 }

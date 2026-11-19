@@ -1,3 +1,4 @@
+
 package com.example.wheretogobackend.controller;
 
 import com.example.wheretogobackend.mysql.entity.DataEntity;
@@ -15,18 +16,19 @@ public class CustomPlaceController {
 
     private final CustomPlaceService customPlaceService;
 
-    // получение всех мест
+    // Получение всех достопримечательностей
     @GetMapping
     public List<DataEntity> getAllPlaces() {
         return customPlaceService.getAllPlaces();
     }
 
-    // получение по ID
+    // Получение подробной информации о достопримечательности
     @GetMapping("/{id}")
-    public ResponseEntity<DataEntity> getPlaceById(@PathVariable Long id) {
+    public ResponseEntity<DataEntity> getPlaceById(
+            @PathVariable Long id
+    ) {
         return customPlaceService.getPlaceById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-
 }

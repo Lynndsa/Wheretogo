@@ -36,15 +36,11 @@ import com.example.wheretogo.data.model.PlaceItem
 import com.example.wheretogo.data.local.OfflineMapManager
 import com.example.wheretogo.data.remote.RetrofitClient
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.geometry.LatLngBounds
-import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
@@ -171,80 +167,40 @@ fun MapScreen(  onPlaceClick: (PlaceItem) -> Unit = {}) {
         }
     }
 
-    // Подгрузка мест, когда видимая область подходит к границе загруженного круга.
-    // loadedCenter и loadedRadius — центр и радиус (в метрах) круга, для которого места
-    // уже получены с сервера.
-    var loadedCenter by remember { mutableStateOf<LatLng?>(null) }
-    var loadedRadius by remember { mutableIntStateOf(0) }
 
-    // Эффект перезапускается при смене isLocationGranted (например, после выдачи разрешения).
-    @OptIn(FlowPreview::class)
-    LaunchedEffect(isLocationGranted) {
-        // snapshotFlow превращает чтение Compose-состояний в Flow: он выдаёт новую пару
-        // (центр, радиус) при каждом изменении любого из них.
-        snapshotFlow { currentMapCenter to currentRadius }
-            // debounce: ждём 300 мс «тишины», чтобы не слать запросы, пока пользователь двигает карту.
-            .debounce(300.milliseconds)
-            // collectLatest: если пришло новое значение, а предыдущая обработка (запрос) ещё идёт,
-            // она отменяется — остаётся только самая свежая.
-            .collectLatest { (mapCenter, visibleRadius) ->
-                // Откуда брать центр для запроса:
-                // 1) положение карты, если оно уже известно;
-                // 2) иначе позиция устройства (если есть разрешение);
-                // 3) иначе центр Санкт-Петербурга по умолчанию.
-                val center = mapCenter ?: if (isLocationGranted) {
-                    val (lat, lon) = getDeviceLocation(context)
-                    LatLng(lat, lon)
-                } else {
-                    LatLng(59.9386, 30.3141)
-                }
+// Загрузка всех мест из MySQL
+    LaunchedEffect(Unit) {
+        while (isActive) {
+            try {
+                val response = RetrofitClient.apiService.getDataBase()
 
-                // Расстояние (в метрах) от текущего центра до центра уже загруженной области.
-                // Если ничего ещё не загружено — считаем расстояние бесконечным.
-                val lc = loadedCenter
-                val distanceToLoadedCenter = lc?.let { center.distanceTo(it) } ?: Double.MAX_VALUE
+                if (response.isSuccessful) {
+                    val receivedPlaces = response.body().orEmpty()
 
-                // Нужна перезагрузка, если ничего не загружено или видимая область (расстояние
-                // до центра + радиус экрана) вышла за 80% загруженного круга.
-                val needReload = lc == null ||
-                        distanceToLoadedCenter + visibleRadius > loadedRadius * 0.8
-
-                if (!needReload) return@collectLatest
-
-                // Радиус запроса: вдвое больше видимого, но не меньше 5 км и не больше 30 км.
-                // Запас нужен, чтобы при небольшом сдвиге карты не делать новый запрос.
-                val radiusToLoad = maxOf(5000, visibleRadius * 2).coerceAtMost(30000)
-
-                try {
-                    val response = RetrofitClient.apiService.getNearbyPlaces(
-                        lat = center.latitude,
-                        lon = center.longitude,
-                        radius = radiusToLoad
+                    Log.d(
+                        "MAP",
+                        "Получено с сервера: ${receivedPlaces.size}"
                     )
-                    if (response.isSuccessful) {
-                        val received = response.body().orEmpty()
-                        // Убираем дубликаты: сначала по названию (без учёта регистра и лишних
-                        // пробелов), затем по паре координат.
-                        // Замечание: у мест без названия (title == null) ключ одинаковый (null),
-                        // поэтому из всех безымянных мест останется только первое.
-                        places = received
-                            .distinctBy { it.title?.trim()?.lowercase()?.replace(Regex("\\s+"), " ") }
-                            .distinctBy { Pair(it.latitude, it.longitude) }
 
-                        // Запоминаем, для какой области данные получены (используется выше
-                        // при следующей проверке needReload).
-                        loadedCenter = center
-                        loadedRadius = radiusToLoad
-                        Log.d("MAP", "Загружено ${places.size} мест, радиус $radiusToLoad м")
-                    }
-                    // Неуспешный HTTP-ответ молча игнорируется: пользователю ошибка не показывается.
-                } catch (e: CancellationException) {
-                    // Отмену корутины нельзя «глотать» — пробрасываем дальше.
-                    throw e
-                } catch (e: Exception) {
-                    Log.e("MAP", "Ошибка загрузки мест", e)
+                    places = receivedPlaces
+
+                    Log.d(
+                        "MAP",
+                        "Передано на карту: ${places.size}"
+                    )
+                } else {
+                    Log.e(
+                        "MAP",
+                        "Ошибка сервера: ${response.code()} ${response.message()}"
+                    )
                 }
+
+            } catch (e: Exception) {
+                Log.e("MAP", "Ошибка загрузки мест из MySQL", e)
             }
+
+            delay(5000.milliseconds)
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -268,9 +224,66 @@ fun MapScreen(  onPlaceClick: (PlaceItem) -> Unit = {}) {
             onMapClick = { selectedPlace = null }
         )
 
+        // Карточка выбранного места снизу
+        AnimatedVisibility(
+            visible = selectedPlace != null,
+            modifier = Modifier.align(Alignment.BottomCenter),
+            enter = slideInVertically { it } + fadeIn(),
+            exit = slideOutVertically { it } + fadeOut()
+        ) {
+            // Последнее непустое место, чтобы текст не пропадал во время анимации закрытия
+            val shown = selectedPlace ?: lastShownPlace
+            if (shown != null) {
+                PlaceInfoCard(
+                    place = shown,
+                    onClose = { selectedPlace = null }
+                )
+            }
+        }
     }
 }
 
+@Composable
+private fun PlaceInfoCard(
+    place: PlaceItem,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = place.title?.takeIf { it.isNotBlank() } ?: "Без названия",
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = place.address?.takeIf { it.isNotBlank() } ?: "Адрес не указан",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            IconButton(onClick = onClose) {
+                Icon(Icons.Default.Close, contentDescription = "Закрыть")
+            }
+        }
+    }
+}
 
 
 

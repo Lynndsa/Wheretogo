@@ -3,7 +3,9 @@ package com.example.wheretogo.ui.attractions
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import android.util.Log
 import androidx.compose.foundation.layout.Box
+import coil.compose.SubcomposeAsyncImage
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,8 +29,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -43,6 +43,11 @@ import com.example.wheretogo.ui.theme.TextHeadStyle
 import com.example.wheretogo.ui.theme.TextLabelStyle
 import com.example.wheretogo.ui.theme.WhereToGoTheme
 import com.example.wheretogo.ui.theme.primaryButtonColors
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.remember
+import coil.ImageLoader
+import coil.compose.SubcomposeAsyncImage
+import okhttp3.OkHttpClient
 
 @Composable
 fun AttractionScreen(
@@ -50,7 +55,26 @@ fun AttractionScreen(
     onAddToRouteClick: () -> Unit = {},
 ) {
     val uriHandler = LocalUriHandler.current
-    val imagePlaceholder = ColorPainter(ButtonColor.copy(alpha = 0.15f))
+    val context = LocalContext.current
+
+    val imageLoader = remember {
+        val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .header(
+                        "User-Agent",
+                        "WhereToGo/1.0 (Android; image loading)"
+                    )
+                    .build()
+
+                chain.proceed(request)
+            }
+            .build()
+
+        ImageLoader.Builder(context)
+            .okHttpClient(okHttpClient)
+            .build()
+    }
 
     Column(
         modifier = Modifier
@@ -63,19 +87,26 @@ fun AttractionScreen(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 5.dp)
         ) {
-            AsyncImage(
+
+            SubcomposeAsyncImage(
                 model = attraction.imageUrl,
+                imageLoader = imageLoader,
                 contentDescription = attraction.title,
-                placeholder = imagePlaceholder,
-                error = imagePlaceholder,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(20.dp)),
+                loading = {
+                    Text("Загрузка фотографии...")
+                },
+                error = {
+                    Text("Изображение недоступно")
+                }
             )
+
 
             Spacer(Modifier.height(16.dp))
 

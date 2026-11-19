@@ -12,18 +12,10 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
-import retrofit2.http.Query
 
 interface ApiService {
     @POST("api/test")
     suspend fun sendTestData(@Body request: TestRequest): Response<TestResponse>
-
-    @GET("api/places/nearby")
-    suspend fun getNearbyPlaces(
-        @Query("lat") lat: Double,
-        @Query("lon") lon: Double,
-        @Query("radius") radius: Int
-    ): Response<List<PlaceItem>>
 
 
     @POST("api/auth/login")
@@ -49,14 +41,13 @@ interface ApiService {
         @Body request: ProfileUpdateRequest
     ): Response<ProfileResponse>
 
-    @GET("api/places/search")
-    suspend fun searchPlaces(
-        @Query("query") query: String
-    ): Response<List<PlaceItem>>
+    // Получение всех достопримечательностей из MySQL
+    @GET("api/v1/custom-places")
+    suspend fun getDataBase(): Response<List<PlaceItem>>
 
-    @GET("api/places/details")
+    // Получение подробностей достопримечательности по ID
+    @GET("api/v1/custom-places/{id}")
     suspend fun getPlaceDetails(
-        @Query("lat") lat: Double,
-        @Query("lon") lon: Double
+        @Path("id") id: Long
     ): Response<PlaceItem>
 }

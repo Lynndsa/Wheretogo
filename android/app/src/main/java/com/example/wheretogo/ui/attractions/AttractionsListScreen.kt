@@ -74,7 +74,7 @@ fun AttractionsListScreen(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = {
-                attractionsViewModel.searchPlaces(it)
+
             },
             modifier = Modifier.fillMaxWidth(),
             placeholder = {
@@ -178,6 +178,7 @@ private fun AttractionCard(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
+
         SubcomposeAsyncImage(
             model = place.imageUrl,
             imageLoader = imageLoader,
@@ -215,15 +216,17 @@ private fun AttractionCard(
             }
         )
 
-        Text(
-            text = place.title ?: "Без названия",
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 10.dp, bottom = 6.dp),
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = ButtonColor,
-            textAlign = TextAlign.Center
-        )
+        place.title?.takeIf { it.isNotBlank() }?.let { title ->
+            Text(
+                text = title,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp, bottom = 6.dp),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = ButtonColor,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }

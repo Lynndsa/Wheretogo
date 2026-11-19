@@ -8,10 +8,12 @@ sealed class Destination(val route: String) {
     data object Map : Destination(MAP_ROUTE)
     data object Profile : Destination(PROFILE_ROUTE)
     data object Places : Destination(PLACES_ROUTE)
+
     data object AttractionDetails : Destination(ATTRACTION_DETAILS_ROUTE) {
         fun createRoute(lat: Double, lon: Double) =
             "route_attraction_details/$lat/$lon"
     }
+
     data object Wishlist : Destination(WISHLIST_ROUTE)
     data object MyRoutes : Destination(MY_ROUTES_ROUTE)
     data object ReadyRoutes : Destination(READY_ROUTES_ROUTE)
