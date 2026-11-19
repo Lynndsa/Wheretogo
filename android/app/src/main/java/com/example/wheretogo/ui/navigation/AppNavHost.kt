@@ -1,3 +1,4 @@
+
 package com.example.wheretogo.ui.navigation
 
 import androidx.compose.foundation.layout.Box
@@ -6,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -18,22 +18,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.navArgument
-import com.example.wheretogo.ui.attractions.AttractionsListScreen
-
 import com.example.wheretogo.Greeting
+import com.example.wheretogo.data.local.SessionManager
 import com.example.wheretogo.ui.auth.LoginWindow
+import com.example.wheretogo.ui.auth.RegistrationWindow
+import com.example.wheretogo.ui.attractions.AttractionScreen
+import com.example.wheretogo.ui.attractions.AttractionsListScreen
+import com.example.wheretogo.ui.attractions.AttractionsViewModel
 import com.example.wheretogo.ui.map.MapWindow
 import com.example.wheretogo.ui.profile.ProfileScreen
-import com.example.wheretogo.ui.auth.RegistrationWindow
-import com.example.wheretogo.data.local.SessionManager
-import com.example.wheretogo.ui.attractions.AttractionScreen
-import com.example.wheretogo.ui.attractions.AttractionsViewModel
-
 import kotlinx.coroutines.launch
 
 private fun getScreenTitle(route: String?): String {
@@ -57,21 +53,17 @@ fun AppNavHost(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
     val attractionsViewModel: AttractionsViewModel = viewModel()
 
-    // Открыто ли боковое меню
     var menuOpen by remember {
         mutableStateOf(false)
     }
 
-    // Текущий экран
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val screenTitle = getScreenTitle(currentRoute)
 
-
-
-    // Показываем верхнюю панель только на основных экранах
     val showMenuButton = currentRoute != null && currentRoute !in listOf(
         Destination.Main.route,
         Destination.Login.route,
@@ -82,7 +74,6 @@ fun AppNavHost(
         .isLoggedIn(context)
         .collectAsState(initial = null)
 
-    // Пока DataStore загружает состояние
     if (isLoggedIn == null) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -102,12 +93,9 @@ fun AppNavHost(
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-
-            // Единая верхняя панель для всех экранов
             if (showMenuButton) {
                 AppTopBar(
                     title = screenTitle,
@@ -117,13 +105,11 @@ fun AppNavHost(
                 )
             }
 
-            // Навигация
             NavHost(
                 navController = navController,
                 startDestination = startDestination,
                 modifier = Modifier.weight(1f)
             ) {
-
                 composable(route = Destination.Main.route) {
                     Greeting(
                         onLoginClick = {
@@ -182,11 +168,12 @@ fun AppNavHost(
                 composable(route = Destination.Map.route) {
                     MapWindow(
                         onPlaceClick = { place ->
+                            attractionsViewModel.selectAttraction(place)
+
                             val lat = place.latitude
                             val lon = place.longitude
 
                             if (lat != null && lon != null) {
-                                attractionsViewModel.selectAttraction(place)
                                 navController.navigate(
                                     Destination.AttractionDetails.createRoute(lat, lon)
                                 )
@@ -199,6 +186,7 @@ fun AppNavHost(
                     AttractionsListScreen(
                         attractionsViewModel = attractionsViewModel,
                         onPlaceClick = { place ->
+                            attractionsViewModel.selectAttraction(place)
 
                             val lat = place.latitude
                             val lon = place.longitude
@@ -211,68 +199,32 @@ fun AppNavHost(
                         }
                     )
                 }
-                composable(
-                    route = Destination.AttractionDetails.route,
-                    arguments = listOf(
-                        navArgument("lat") {
-                            type = NavType.StringType
-                        },
-                        navArgument("lon") {
-                            type = NavType.StringType
-                        }
-                    )
-                ) { backStackEntry ->
 
-                    val lat = backStackEntry.arguments
-                        ?.getString("lat")
-                        ?.toDoubleOrNull()
+                composable(route = Destination.AttractionDetails.route) {
+                    val attraction = attractionsViewModel.selectedAttraction
 
-                    val lon = backStackEntry.arguments
-                        ?.getString("lon")
-                        ?.toDoubleOrNull()
-
-                    if (lat != null && lon != null) {
-
-                        LaunchedEffect(lat, lon) {
-                            attractionsViewModel.loadAttraction(lat, lon)
+                    when {
+                        attraction != null -> {
+                            AttractionScreen(
+                                attraction = attraction
+                            )
                         }
 
-                        val attraction = attractionsViewModel.selectedAttraction
-                        val isLoading = attractionsViewModel.isAttractionLoading
-                        val errorMessage = attractionsViewModel.attractionError
-
-                        when {
-                            isLoading -> {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator()
-                                }
+                        attractionsViewModel.isLoading -> {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator()
                             }
+                        }
 
-                            attraction != null -> {
-                                AttractionScreen(
-                                    attraction = attraction
-                                )
-                            }
-
-                            errorMessage != null -> {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(errorMessage)
-                                }
-                            }
-
-                            else -> {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator()
-                                }
+                        else -> {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("Достопримечательность не найдена")
                             }
                         }
                     }
@@ -300,7 +252,6 @@ fun AppNavHost(
             }
         }
 
-        // Боковое меню поверх всего приложения
         SideMenu(
             visible = menuOpen,
             onDismiss = {
@@ -318,7 +269,6 @@ fun AppNavHost(
     }
 }
 
-// Временная заглушка
 @Composable
 private fun Placeholder(title: String) {
     Box(
