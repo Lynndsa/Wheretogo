@@ -123,51 +123,36 @@ fun MapScreen(  onPlaceClick: (PlaceItem) -> Unit = {}) {
         }
     }
 
-    // Динамическая загрузка мест вокруг центра экрана каждые 5 секунд
-    LaunchedEffect(isLocationGranted, currentMapCenter, currentRadius) {
-        while (isActive) {
-            val center = currentMapCenter ?: if (isLocationGranted) {
-                val (lat, lon) = getDeviceLocation(context)
-                LatLng(lat, lon)
-            } else {
-                LatLng(59.9386, 30.3141) // По умолчанию СПб
-            }
 
+// Загрузка всех мест из MySQL
+    LaunchedEffect(Unit) {
+        while (isActive) {
             try {
-                val response = RetrofitClient.apiService.getNearbyPlaces(
-                    lat = center.latitude,
-                    lon = center.longitude,
-                    radius = currentRadius
-                )
-                Log.d("MAP", "Код: ${response.code()}, мест в радиусе ${currentRadius}м от (${center.latitude}, ${center.longitude}): ${response.body()?.size}")
+                val response = RetrofitClient.apiService.getDataBase()
+
                 if (response.isSuccessful) {
                     val receivedPlaces = response.body().orEmpty()
 
-                    Log.d("MAP", "Получено мест: ${receivedPlaces.size}")
+                    Log.d(
+                        "MAP",
+                        "Получено с сервера: ${receivedPlaces.size}"
+                    )
 
-                    receivedPlaces
-                        .groupBy { it.title?.trim()?.lowercase() ?: "" }
-                        .filterValues { it.size > 1 }
-                        .forEach { (title, duplicates) ->
-                            Log.w("MAP", "Дубль: $title, количество: ${duplicates.size}")
-                        }
+                    places = receivedPlaces
 
-                    val uniqueByTitle = receivedPlaces.distinctBy {
-                        it.title
-                            ?.trim()
-                            ?.lowercase()
-                            ?.replace(Regex("\\s+"), " ")
-                    }
-
-                    places = uniqueByTitle.distinctBy {
-                        Pair(
-                            it.latitude,
-                            it.longitude
-                        )
-                    }
+                    Log.d(
+                        "MAP",
+                        "Передано на карту: ${places.size}"
+                    )
+                } else {
+                    Log.e(
+                        "MAP",
+                        "Ошибка сервера: ${response.code()} ${response.message()}"
+                    )
                 }
+
             } catch (e: Exception) {
-                Log.e("MAP", "Ошибка загрузки мест каждые 5 сек", e)
+                Log.e("MAP", "Ошибка загрузки мест из MySQL", e)
             }
 
             delay(5000.milliseconds)

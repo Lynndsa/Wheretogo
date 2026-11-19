@@ -1,8 +1,8 @@
+
 package com.example.wheretogo.ui.map
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.toColorInt
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -58,16 +59,21 @@ import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.Point
-import androidx.core.graphics.toColorInt
+import kotlin.math.asin
+import kotlin.math.cos
+import kotlin.math.pow
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 private const val PLACES_SOURCE = "places-source"
-private const val PLACES_LAYER = "places-layer"                       // одиночные точки
-private const val LABELS_LAYER = "places-labels-layer"                // подписи одиночных точек
-private const val CLUSTER_LAYER = "places-cluster-layer"              // кружки кластеров
-private const val CLUSTER_COUNT_LAYER = "places-cluster-count-layer"  // число в кластере
+private const val PLACES_LAYER = "places-layer"
+private const val LABELS_LAYER = "places-labels-layer"
+private const val CLUSTER_LAYER = "places-cluster-layer"
+private const val CLUSTER_COUNT_LAYER = "places-cluster-count-layer"
 
 private const val MIN_RADIUS_METERS = 1000
 private const val MAX_RADIUS_METERS = 50000
+private const val DUPLICATE_DISTANCE_METERS = 30.0
 
 @Composable
 fun MapLibreView(
@@ -77,10 +83,8 @@ fun MapLibreView(
     initialCenter: LatLng = LatLng(59.9386, 30.3141),
     initialZoom: Double = 11.0,
     isLocationGranted: Boolean = false,
-    /** Центр карты и радиус видимой области в метрах */
     onCameraCenterChanged: (LatLng, Int) -> Unit = { _, _ -> },
     onPlaceClick: (PlaceItem) -> Unit = {},
-    /** Клик по пустому месту карты (не по точке и не по кластеру) */
     onMapClick: () -> Unit = {}
 ) {
     if (LocalInspectionMode.current) {
@@ -97,31 +101,45 @@ fun MapLibreView(
 
     val context = LocalContext.current
 
-    // Всегда актуальные значения для слушателей, которые регистрируются один раз
-    val currentPlaces by rememberUpdatedState(places)
+    // Актуальные значения для слушателей карты
     val currentOnPlaceClick by rememberUpdatedState(onPlaceClick)
     val currentOnMapClick by rememberUpdatedState(onMapClick)
     val currentOnCameraCenterChanged by rememberUpdatedState(onCameraCenterChanged)
 
-    remember {
-        MapLibre.getInstance(context).also { MapLibre.setConnected(true) }
+    // Список мест в том же порядке, в котором они отображаются на карте
+    var displayedPlaces by remember {
+        mutableStateOf(emptyList<PlaceItem>())
     }
 
-    var map by remember { mutableStateOf<MapLibreMap?>(null) }
-    var styleReady by remember { mutableStateOf(false) }
+    val currentDisplayedPlaces by rememberUpdatedState(displayedPlaces)
+
+    remember {
+        MapLibre.getInstance(context).also {
+            MapLibre.setConnected(true)
+        }
+    }
+
+    var map by remember {
+        mutableStateOf<MapLibreMap?>(null)
+    }
+
+    var styleReady by remember {
+        mutableStateOf(false)
+    }
 
     val mapView = remember {
         MapView(context).apply {
             onCreate(null)
+
             getMapAsync { m ->
                 map = m
+
                 m.cameraPosition = CameraPosition.Builder()
                     .target(initialCenter)
                     .zoom(initialZoom)
                     .build()
 
                 m.setStyle(styleUrl) { style ->
-                    Log.d("MAP_TEST", "Стиль загружен")
 
                     // Источник с кластеризацией
                     style.addSource(
@@ -129,14 +147,14 @@ fun MapLibreView(
                             PLACES_SOURCE,
                             GeoJsonOptions()
                                 .withCluster(true)
-                                .withClusterRadius(60)   // радиус объединения в пикселях
-                                .withClusterMaxZoom(14)  // с зума 15 кластеров уже нет
+                                .withClusterRadius(60)
+                                .withClusterMaxZoom(14)
                         )
                     )
 
                     val isCluster = Expression.has("point_count")
 
-                    // Кружки кластеров: цвет и размер зависят от количества
+                    // Кружки кластеров
                     style.addLayer(
                         CircleLayer(CLUSTER_LAYER, PLACES_SOURCE)
                             .withFilter(isCluster)
@@ -145,8 +163,14 @@ fun MapLibreView(
                                     Expression.step(
                                         Expression.get("point_count"),
                                         Expression.color("#42A5F5".toColorInt()),
-                                        Expression.stop(10, Expression.color("#FB8C00".toColorInt())),
-                                        Expression.stop(50, Expression.color("#E53935".toColorInt()))
+                                        Expression.stop(
+                                            10,
+                                            Expression.color("#FB8C00".toColorInt())
+                                        ),
+                                        Expression.stop(
+                                            50,
+                                            Expression.color("#E53935".toColorInt())
+                                        )
                                     )
                                 ),
                                 circleRadius(
@@ -162,11 +186,16 @@ fun MapLibreView(
                             )
                     )
 
+                    // Число мест в кластере
                     style.addLayer(
                         SymbolLayer(CLUSTER_COUNT_LAYER, PLACES_SOURCE)
                             .withFilter(isCluster)
                             .withProperties(
-                                textField(Expression.toString(Expression.get("point_count_abbreviated"))),
+                                textField(
+                                    Expression.toString(
+                                        Expression.get("point_count_abbreviated")
+                                    )
+                                ),
                                 textSize(13f),
                                 textColor("#FFFFFF"),
                                 textAllowOverlap(true),
@@ -174,7 +203,7 @@ fun MapLibreView(
                             )
                     )
 
-                    // Одиночные точки (не кластеры)
+                    // Одиночные точки
                     style.addLayer(
                         CircleLayer(PLACES_LAYER, PLACES_SOURCE)
                             .withFilter(Expression.not(isCluster))
@@ -186,7 +215,7 @@ fun MapLibreView(
                             )
                     )
 
-                    // Подписи одиночных точек (не накладываются друг на друга)
+                    // Подписи одиночных точек
                     style.addLayer(
                         SymbolLayer(LABELS_LAYER, PLACES_SOURCE)
                             .withFilter(Expression.not(isCluster))
@@ -208,8 +237,9 @@ fun MapLibreView(
         }
     }
 
-    // Жизненный цикл
+    // Жизненный цикл карты
     val lifecycleOwner = LocalLifecycleOwner.current
+
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
@@ -221,31 +251,76 @@ fun MapLibreView(
                 else -> {}
             }
         }
+
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
-    // Обновление точек при изменении списка
+    // Удаление дублей и отрисовка мест
     LaunchedEffect(places, styleReady) {
         if (!styleReady) return@LaunchedEffect
 
-        val features = places.mapIndexedNotNull { index, p ->
-            val lat = p.latitude ?: return@mapIndexedNotNull null
-            val lon = p.longitude ?: return@mapIndexedNotNull null
+        val uniquePlaces = mutableListOf<PlaceItem>()
 
-            Feature.fromGeometry(Point.fromLngLat(lon, lat)).apply {
-                addNumberProperty("index", index)
-                addStringProperty("title", p.title ?: "")
+        places.forEach { place ->
+            val lat = place.latitude ?: return@forEach
+            val lon = place.longitude ?: return@forEach
+            val title = place.title
+                ?.trim()
+                ?.lowercase()
+                ?.takeIf { it.isNotEmpty() }
+                ?: return@forEach
+
+            val isDuplicate = uniquePlaces.any { existing ->
+                val existingTitle = existing.title
+                    ?.trim()
+                    ?.lowercase()
+
+                if (existingTitle != title) {
+                    false
+                } else {
+                    val existingLat = existing.latitude ?: return@any false
+                    val existingLon = existing.longitude ?: return@any false
+
+                    distanceMeters(
+                        lat,
+                        lon,
+                        existingLat,
+                        existingLon
+                    ) <= DUPLICATE_DISTANCE_METERS
+                }
+            }
+
+            if (!isDuplicate) {
+                uniquePlaces.add(place)
             }
         }
 
-        map?.style?.getSourceAs<GeoJsonSource>(PLACES_SOURCE)
-            ?.setGeoJson(FeatureCollection.fromFeatures(features))
+        val features = uniquePlaces.mapIndexed { index, place ->
+            Feature.fromGeometry(
+                Point.fromLngLat(
+                    place.longitude!!,
+                    place.latitude!!
+                )
+            ).apply {
+                addNumberProperty("index", index)
+                addStringProperty("title", place.title ?: "")
+            }
+        }
 
-        Log.d("MAP_TEST", "Отрисовано точек: ${features.size}")
+        map?.style
+            ?.getSourceAs<GeoJsonSource>(PLACES_SOURCE)
+            ?.setGeoJson(
+                FeatureCollection.fromFeatures(features)
+            )
+
+        displayedPlaces = uniquePlaces
     }
 
-    // Клик: по кластеру приближаем, по точке открываем место
+    // Обработка нажатий по карте
     LaunchedEffect(styleReady) {
         val m = map ?: return@LaunchedEffect
         if (!styleReady) return@LaunchedEffect
@@ -254,18 +329,37 @@ fun MapLibreView(
             val screenPoint = m.projection.toScreenLocation(latLng)
 
             // 1. Клик по кластеру
-            val cluster = m.queryRenderedFeatures(screenPoint, CLUSTER_LAYER).firstOrNull()
+            val cluster = m.queryRenderedFeatures(
+                screenPoint,
+                CLUSTER_LAYER
+            ).firstOrNull()
+
             if (cluster != null) {
                 val zoom = m.cameraPosition.zoom + 2.0
-                m.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoom), 400)
+
+                m.animateCamera(
+                    CameraUpdateFactory.newLatLngZoom(latLng, zoom),
+                    400
+                )
+
                 return@addOnMapClickListener true
             }
 
             // 2. Клик по одиночной точке
-            val hit = m.queryRenderedFeatures(screenPoint, PLACES_LAYER).firstOrNull()
-            val index = hit?.getNumberProperty("index")?.toInt()
+            val hit = m.queryRenderedFeatures(
+                screenPoint,
+                PLACES_LAYER
+            ).firstOrNull()
+
+            val index = hit
+                ?.getNumberProperty("index")
+                ?.toInt()
+
             if (index != null) {
-                currentPlaces.getOrNull(index)?.let(currentOnPlaceClick)
+                currentDisplayedPlaces
+                    .getOrNull(index)
+                    ?.let(currentOnPlaceClick)
+
                 true
             } else {
                 currentOnMapClick()
@@ -280,40 +374,61 @@ fun MapLibreView(
         if (!styleReady) return@LaunchedEffect
 
         m.addOnCameraIdleListener {
-            val center = m.cameraPosition.target ?: return@addOnCameraIdleListener
+            val center = m.cameraPosition.target
+                ?: return@addOnCameraIdleListener
+
             val bounds = m.projection.visibleRegion.latLngBounds
-            val radiusMeters = center.distanceTo(bounds.northEast).toInt()
-                .coerceIn(MIN_RADIUS_METERS, MAX_RADIUS_METERS)
+
+            val radiusMeters = center
+                .distanceTo(bounds.northEast)
+                .toInt()
+                .coerceIn(
+                    MIN_RADIUS_METERS,
+                    MAX_RADIUS_METERS
+                )
+
             currentOnCameraCenterChanged(center, radiusMeters)
         }
     }
 
-    // Включение геолокации MapLibre при наличии разрешения
+    // Включение геолокации
     LaunchedEffect(isLocationGranted, styleReady) {
         val m = map ?: return@LaunchedEffect
         val style = m.style ?: return@LaunchedEffect
-        if (!styleReady || !isLocationGranted) return@LaunchedEffect
+
+        if (!styleReady || !isLocationGranted) {
+            return@LaunchedEffect
+        }
 
         val hasFinePermission = ContextCompat.checkSelfPermission(
-            context, Manifest.permission.ACCESS_FINE_LOCATION
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
+
         val hasCoarsePermission = ContextCompat.checkSelfPermission(
-            context, Manifest.permission.ACCESS_COARSE_LOCATION
+            context,
+            Manifest.permission.ACCESS_COARSE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
 
         if (hasFinePermission || hasCoarsePermission) {
             try {
                 val locationComponent = m.locationComponent
+
                 if (!locationComponent.isLocationComponentActivated) {
                     locationComponent.activateLocationComponent(
-                        LocationComponentActivationOptions.builder(context, style).build()
+                        LocationComponentActivationOptions.builder(
+                            context,
+                            style
+                        ).build()
                     )
                 }
+
                 locationComponent.isLocationComponentEnabled = true
                 locationComponent.cameraMode = CameraMode.TRACKING
                 locationComponent.renderMode = RenderMode.NORMAL
-            } catch (e: Exception) {
-                Log.e("MAP_TEST", "Ошибка включения геолокации: ${e.message}")
+
+            } catch (_: Exception) {
+                // Геолокация недоступна — карта продолжает работать
             }
         }
     }
@@ -322,4 +437,24 @@ fun MapLibreView(
         factory = { mapView },
         modifier = modifier.fillMaxSize()
     )
+}
+
+// Расстояние между двумя координатами в метрах
+private fun distanceMeters(
+    lat1: Double,
+    lon1: Double,
+    lat2: Double,
+    lon2: Double
+): Double {
+    val earthRadius = 6371000.0
+
+    val dLat = Math.toRadians(lat2 - lat1)
+    val dLon = Math.toRadians(lon2 - lon1)
+
+    val a = sin(dLat / 2).pow(2.0) +
+            cos(Math.toRadians(lat1)) *
+            cos(Math.toRadians(lat2)) *
+            sin(dLon / 2).pow(2.0)
+
+    return 2 * earthRadius * asin(sqrt(a))
 }
