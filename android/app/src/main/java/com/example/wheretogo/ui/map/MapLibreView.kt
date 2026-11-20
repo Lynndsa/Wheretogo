@@ -1,4 +1,3 @@
-
 package com.example.wheretogo.ui.map
 
 import android.Manifest
@@ -65,16 +64,50 @@ import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.sqrt
 
+// ---------- Идентификаторы источника данных и слоёв карты ----------
+// Источник данных (GeoJSON) один — в нём лежат все места. Поверх него строятся четыре слоя;
+// по этим идентификаторам слои находят при кликах (queryRenderedFeatures).
 private const val PLACES_SOURCE = "places-source"
 private const val PLACES_LAYER = "places-layer"
 private const val LABELS_LAYER = "places-labels-layer"
 private const val CLUSTER_LAYER = "places-cluster-layer"
 private const val CLUSTER_COUNT_LAYER = "places-cluster-count-layer"
 
+// Ограничения радиуса видимой области (в метрах), который карта сообщает наружу.
+// Нижняя граница нужна, чтобы при сильном приближении не слать слишком маленький радиус;
+// верхняя — чтобы при отдалении не запрашивать слишком много данных.
 private const val MIN_RADIUS_METERS = 1000
 private const val MAX_RADIUS_METERS = 50000
 private const val DUPLICATE_DISTANCE_METERS = 30.0
 
+/**
+ * Компонент карты на основе MapLibre (векторная карта с кластеризацией мест).
+ * Это «глупый» компонент: сам ничего не загружает с сервера и не запрашивает разрешения.
+ * Данные и решения приходят от [MapScreen] (Map.kt), а события уходят ему обратно колбэками.
+ *
+ * ## Что делает
+ * - Создаёт MapView и загружает стиль карты (адрес стиля задан в MapScreen).
+ * - Добавляет источник GeoJSON с кластеризацией и четыре слоя: кружки кластеров, число в
+ *   кластере, одиночные точки и подписи точек.
+ * - Показывает места из [places] и обновляет их при изменении списка.
+ * - Обрабатывает тапы: по кластеру — приближает, по точке — сообщает о месте, по пустому
+ *   месту — сообщает о клике на карту.
+ * - Сообщает центр и радиус видимой области, когда камера остановилась.
+ * - При наличии разрешения включает на карте индикатор положения пользователя.
+ *
+ * ## Параметры
+ * @param modifier стандартный модификатор Compose.
+ * @param styleUrl адрес стиля карты (JSON); в [MapScreen] это стиль MapTiler.
+ * @param places места для отображения. Места без координат пропускаются.
+ * @param initialCenter начальный центр камеры (применяется один раз при создании карты).
+ * @param initialZoom начальный масштаб (применяется один раз).
+ * @param isLocationGranted выдано ли разрешение на геолокацию; решает, включать ли слежение.
+ * @param onCameraCenterChanged вызывается, когда камера остановилась: центр карты и радиус
+ *   видимой области в метрах (в пределах 1000..50000). [MapScreen] использует его для
+ *   решения, пора ли подгружать новые места.
+ * @param onPlaceClick вызывается при тапе по одиночной точке с соответствующим [PlaceItem].
+ * @param onMapClick вызывается при тапе по пустому месту (не по точке и не по кластеру).
+ */
 @Composable
 fun MapLibreView(
     modifier: Modifier = Modifier,
@@ -87,6 +120,7 @@ fun MapLibreView(
     onPlaceClick: (PlaceItem) -> Unit = {},
     onMapClick: () -> Unit = {}
 ) {
+    // В предпросмотре Android Studio настоящая карта не работает — показываем серую заглушку.
     if (LocalInspectionMode.current) {
         Box(
             modifier = modifier
@@ -101,7 +135,11 @@ fun MapLibreView(
 
     val context = LocalContext.current
 
-    // Актуальные значения для слушателей карты
+    // Всегда актуальные значения для слушателей, которые регистрируются один раз.
+    // Слушатели карты (ниже) создаются один раз и «запоминают» значения на момент создания.
+    // rememberUpdatedState даёт обёртку, чья текущая версия всегда свежая, поэтому слушатель
+    // видит актуальный список мест и актуальные колбэки.
+    val currentPlaces by rememberUpdatedState(places)
     val currentOnPlaceClick by rememberUpdatedState(onPlaceClick)
     val currentOnMapClick by rememberUpdatedState(onMapClick)
     val currentOnCameraCenterChanged by rememberUpdatedState(onCameraCenterChanged)
@@ -113,6 +151,8 @@ fun MapLibreView(
 
     val currentDisplayedPlaces by rememberUpdatedState(displayedPlaces)
 
+    // Однократная инициализация библиотеки MapLibre. setConnected(true) принудительно
+    // сообщает ей, что сеть доступна (отключает собственное определение состояния сети).
     remember {
         MapLibre.getInstance(context).also {
             MapLibre.setConnected(true)
@@ -127,6 +167,8 @@ fun MapLibreView(
         mutableStateOf(false)
     }
 
+    // Создание MapView один раз. onCreate(null) вызывается вручную, остальные события
+    // жизненного цикла (onStart, onResume и т.д.) пробрасываются ниже в DisposableEffect.
     val mapView = remember {
         MapView(context).apply {
             onCreate(null)
@@ -134,6 +176,7 @@ fun MapLibreView(
             getMapAsync { m ->
                 map = m
 
+                // Начальное положение камеры.
                 m.cameraPosition = CameraPosition.Builder()
                     .target(initialCenter)
                     .zoom(initialZoom)
@@ -141,7 +184,8 @@ fun MapLibreView(
 
                 m.setStyle(styleUrl) { style ->
 
-                    // Источник с кластеризацией
+                    // Источник с кластеризацией. Пока он пуст; точки в него попадают
+                    // в блоке «Обновление точек при изменении списка» ниже.
                     style.addSource(
                         GeoJsonSource(
                             PLACES_SOURCE,
@@ -152,9 +196,12 @@ fun MapLibreView(
                         )
                     )
 
+                    // Выражение-фильтр: у кластера библиотека сама добавляет свойство point_count.
                     val isCluster = Expression.has("point_count")
 
-                    // Кружки кластеров
+                    // Кружки кластеров: цвет и размер зависят от количества мест в кластере.
+                    // step работает по порогам: до 10 — синий и радиус 16, от 10 до 49 —
+                    // оранжевый и 22, от 50 — красный и 28.
                     style.addLayer(
                         CircleLayer(CLUSTER_LAYER, PLACES_SOURCE)
                             .withFilter(isCluster)
@@ -186,7 +233,9 @@ fun MapLibreView(
                             )
                     )
 
-                    // Число мест в кластере
+                    // Число мест внутри кластера (белый текст поверх кружка).
+                    // point_count_abbreviated — сокращённая запись числа (например, «1k»).
+                    // Перекрытия разрешены, чтобы число всегда было видно.
                     style.addLayer(
                         SymbolLayer(CLUSTER_COUNT_LAYER, PLACES_SOURCE)
                             .withFilter(isCluster)
@@ -203,7 +252,7 @@ fun MapLibreView(
                             )
                     )
 
-                    // Одиночные точки
+                    // Одиночные точки (не кластеры): красный кружок с белой обводкой.
                     style.addLayer(
                         CircleLayer(PLACES_LAYER, PLACES_SOURCE)
                             .withFilter(Expression.not(isCluster))
@@ -215,7 +264,10 @@ fun MapLibreView(
                             )
                     )
 
-                    // Подписи одиночных точек
+                    // Подписи одиночных точек (не накладываются друг на друга).
+                    // Текст берётся из свойства title, ставится под точкой (anchor top со
+                    // смещением); textOptional(true) позволяет карте скрывать подпись,
+                    // если для неё нет места.
                     style.addLayer(
                         SymbolLayer(LABELS_LAYER, PLACES_SOURCE)
                             .withFilter(Expression.not(isCluster))
@@ -231,13 +283,19 @@ fun MapLibreView(
                             )
                     )
 
+                    // Сигнал остальным блокам ниже: стиль готов, можно работать со слоями.
                     styleReady = true
                 }
             }
         }
     }
 
-    // Жизненный цикл карты
+    // Жизненный цикл.
+    // MapView (старый View) сам не знает о жизненном цикле Compose, поэтому события экрана
+    // пробрасываются в него вручную. Наблюдатель снимается при уходе компонента с экрана.
+    // Замечание: onDestroy у MapView вызывается только по ON_DESTROY владельца жизненного
+    // цикла (экрана целиком); если компонент просто уйдёт из композиции раньше, MapView
+    // уничтожен не будет.
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
@@ -391,7 +449,7 @@ fun MapLibreView(
         }
     }
 
-    // Включение геолокации
+    // Включение геолокации MapLibre при наличии разрешения
     LaunchedEffect(isLocationGranted, styleReady) {
         val m = map ?: return@LaunchedEffect
         val style = m.style ?: return@LaunchedEffect
@@ -413,7 +471,6 @@ fun MapLibreView(
         if (hasFinePermission || hasCoarsePermission) {
             try {
                 val locationComponent = m.locationComponent
-
                 if (!locationComponent.isLocationComponentActivated) {
                     locationComponent.activateLocationComponent(
                         LocationComponentActivationOptions.builder(

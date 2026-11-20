@@ -43,9 +43,31 @@ import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.geometry.LatLngBounds
 import kotlin.time.Duration.Companion.milliseconds
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * «Умный» экран карты: здесь вся логика, а сама карта рисуется в [MapLibreView]
+ * (файл MapLibreView.kt).
+ *
+ * ## Что делает этот экран
+ * 1. Запрашивает у пользователя разрешение на геолокацию.
+ * 2. В фоне скачивает офлайн-регион карты Санкт-Петербурга (OfflineMapManager из
+ *    пакета data.local; его кода в загруженных файлах нет; процент загрузки считает
+ *    [OfflineProgress] из OfflineProgress.kt).
+ * 3. Следит за положением и масштабом карты и, когда пользователь «уезжает» к границе
+ *    уже загруженной области, подгружает места с сервера (RetrofitClient.apiService.getNearbyPlaces).
+ * 4. Передаёт список мест и колбэки в [MapLibreView].
+ *
+ * ## Где используется
+ * Вызывается из [MapWindow] (MapActivity.kt), который задаёт рамку, фон и отступы.
+ *
+ * @param onPlaceClick вызывается, когда пользователь тапнул по точке-месту на карте.
+ *   Пробрасывается в [MapLibreView]; что делать дальше (например, открыть экран места),
+ *   решает вызывающий код.
+ */
 @Composable
 fun MapScreen(  onPlaceClick: (PlaceItem) -> Unit = {}) {
+    // В режиме предпросмотра Android Studio (@Preview) сеть, разрешения и MapLibre недоступны.
+    // Поэтому рисуем упрощённый вариант (MapLibreView в этом режиме покажет серую заглушку
+    // «Map Preview») и сразу выходим.
     if (LocalInspectionMode.current) {
         MapLibreView(
             modifier = Modifier.fillMaxSize(),
@@ -58,16 +80,25 @@ fun MapScreen(  onPlaceClick: (PlaceItem) -> Unit = {}) {
 
     val context = LocalContext.current
 
-    // Центр и радиус видимой области карты
+    // Центр и радиус видимой области карты.
+    // Обновляются колбэком onCameraCenterChanged из MapLibreView, когда камера остановилась.
+    // currentMapCenter == null, пока карта ещё ни разу не сообщила своё положение.
+    // Радиус в метрах; 5000 — стартовое значение до первого сообщения от карты.
     var currentMapCenter by remember { mutableStateOf<LatLng?>(null) }
-    var currentRadius by remember { mutableStateOf(5000) }
+    var currentRadius by remember { mutableIntStateOf(5000) }
 
-    // Выбранное место (для карточки снизу)
+    // Выбранное место (для карточки снизу).
+    // Сейчас карточка не отрисована: selectedPlace только сбрасывается в null при клике по
+    // пустому месту карты и нигде не выставляется. Импорты AnimatedVisibility, Row, Close и
+    // т.п. вверху файла относятся к этой ещё не реализованной (или удалённой) карточке.
     var selectedPlace by remember { mutableStateOf<PlaceItem?>(null) }
+    // lastShownPlace запоминает последнее непустое значение — типичный приём, чтобы при
+    // анимации скрытия карточки в ней не пропадал текст.
     var lastShownPlace by remember { mutableStateOf<PlaceItem?>(null) }
     if (selectedPlace != null) lastShownPlace = selectedPlace
 
-    // Проверка текущего статуса разрешения геолокации
+    // Проверка текущего статуса разрешения геолокации:
+    // true, если выдано точное (FINE) ИЛИ приблизительное (COARSE) разрешение.
     var isLocationGranted by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
@@ -75,12 +106,15 @@ fun MapScreen(  onPlaceClick: (PlaceItem) -> Unit = {}) {
         )
     }
 
-    // Инициализация лаунчера для запроса разрешений
+    // Инициализация лаунчера для запроса разрешений.
+    // Результат приходит в лямбду ниже: достаточно любого из двух разрешений.
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         val isGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
                 permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        // Обновление состояния перерисует экран и перезапустит эффекты, зависящие от
+        // isLocationGranted (см. загрузку мест ниже и включение геолокации в MapLibreView).
         isLocationGranted = isGranted
         if (isGranted) {
             Log.d("MAP", "Разрешение на геолокацию получено")
@@ -89,7 +123,9 @@ fun MapScreen(  onPlaceClick: (PlaceItem) -> Unit = {}) {
         }
     }
 
-    // Автоматический запуск запроса при открытии экрана
+    // Автоматический запуск запроса при открытии экрана.
+    // LaunchedEffect(Unit) выполняется один раз при входе на экран.
+    // Если разрешение уже есть — диалог не показывается.
     LaunchedEffect(Unit) {
         if (!isLocationGranted) {
             permissionLauncher.launch(
@@ -101,11 +137,19 @@ fun MapScreen(  onPlaceClick: (PlaceItem) -> Unit = {}) {
         }
     }
 
+    // Адрес стиля карты MapTiler. Ключ берётся из BuildConfig (поле MAPTILER_API_KEY
+    // задаётся в build.gradle модуля, обычно из local.properties), чтобы не хранить его в коде.
     val mapTilerStyleUrl = "https://api.maptiler.com/maps/base-v4/style.json?key=${BuildConfig.MAPTILER_API_KEY}"
+    // Список мест, показанных на карте. Обновляется после успешной загрузки с сервера.
     var places by remember { mutableStateOf<List<PlaceItem>>(emptyList()) }
     val offlineMapManager = remember { OfflineMapManager(context) }
 
-    // Фоновый запуск скачивания без блокировки UI
+    // Фоновый запуск скачивания без блокировки UI.
+    // withContext(Dispatchers.IO) переносит работу в поток для ввода-вывода.
+    // Скачивается регион «СПб и пригороды»: прямоугольник между двумя углами
+    // (северо-восток 60.15; 30.70 и юго-запад 59.70; 29.80) для масштабов от 9 до 13.
+    // Запускается при каждом входе на экран; как менеджер защищается от повторной загрузки
+    // уже скачанного региона — смотрите OfflineMapManager.downloadRegion.
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
             val spbBounds = LatLngBounds.Builder()
@@ -160,6 +204,8 @@ fun MapScreen(  onPlaceClick: (PlaceItem) -> Unit = {}) {
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // Сама карта. Всё, что она «знает», приходит параметрами; всё, что происходит на
+        // карте, возвращается колбэками.
         MapLibreView(
             modifier = Modifier.fillMaxSize(),
             onPlaceClick = onPlaceClick,
@@ -168,10 +214,13 @@ fun MapScreen(  onPlaceClick: (PlaceItem) -> Unit = {}) {
             initialZoom = 11.0,
             places = places,
             isLocationGranted = isLocationGranted,
+            // Карта сообщает новый центр и радиус, когда камера остановилась. Эти значения
+            // запускают snapshotFlow в блоке загрузки мест выше.
             onCameraCenterChanged = { newCenter, radius ->
                 currentMapCenter = newCenter
                 currentRadius = radius
             },
+            // Клик по пустому месту карты снимает выбор места.
             onMapClick = { selectedPlace = null }
         )
 
@@ -237,7 +286,22 @@ private fun PlaceInfoCard(
 }
 
 
- suspend fun getDeviceLocation(context: Context): Pair<Double, Double> {
+
+/**
+ * Возвращает последнюю известную геопозицию устройства как пару (широта, долгота).
+ *
+ * Как работает:
+ * - Выполняется в потоке ввода-вывода (Dispatchers.IO).
+ * - Если выдано хотя бы одно разрешение на геолокацию, спрашивает у LocationManager
+ *   последнее известное положение: сначала от GPS, потом от сети. GPS приоритетнее.
+ * - Это «последнее известное» положение (getLastKnownLocation), а не свежее определение:
+ *   оно может быть устаревшим или отсутствовать.
+ * - Если позиции нет, нет разрешения или произошла ошибка — возвращает центр
+ *   Санкт-Петербурга (59.9386, 30.3141).
+ *
+ * Используется в блоке загрузки мест в [MapScreen], когда карта ещё не сообщила свой центр.
+ */
+suspend fun getDeviceLocation(context: Context): Pair<Double, Double> {
     return withContext(Dispatchers.IO) {
         try {
             val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
@@ -245,6 +309,8 @@ private fun PlaceInfoCard(
             val hasCoarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
             if ((hasFine || hasCoarse) && locationManager != null) {
+                // Каждый провайдер опрашивается, только если он включён в настройках устройства.
+                // SecurityException (разрешение отозвали на лету) превращается в null.
                 val gpsLoc = if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                     try { locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER) } catch (e: SecurityException) { null }
                 } else null
@@ -253,6 +319,7 @@ private fun PlaceInfoCard(
                     try { locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER) } catch (e: SecurityException) { null }
                 } else null
 
+                // Берём GPS, а если его нет — сетевую позицию.
                 val loc = gpsLoc ?: netLoc
                 if (loc != null) {
                     Log.d("MAP", "Получена геопозиция пользователя: ${loc.latitude}, ${loc.longitude}")
@@ -262,6 +329,7 @@ private fun PlaceInfoCard(
         } catch (e: Exception) {
             Log.e("MAP", "Ошибка получения геопозиции", e)
         }
+        // Запасной вариант: центр Санкт-Петербурга.
         Pair(59.9386, 30.3141)
     }
 }
