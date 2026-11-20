@@ -1,4 +1,3 @@
-
 package com.example.wheretogo.data.remote
 
 import com.example.wheretogo.data.remote.dto.LoginResponse
@@ -15,11 +14,9 @@ import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface ApiService {
-
     @POST("api/test")
-    suspend fun sendTestData(
-        @Body request: TestRequest
-    ): Response<TestResponse>
+    suspend fun sendTestData(@Body request: TestRequest): Response<TestResponse>
+
 
     @POST("api/auth/login")
     suspend fun login(
