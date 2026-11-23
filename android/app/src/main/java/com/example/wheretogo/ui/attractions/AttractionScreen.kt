@@ -4,6 +4,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import android.util.Log
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Box
 import coil.compose.SubcomposeAsyncImage
 import androidx.compose.foundation.layout.Column
@@ -16,6 +22,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -52,6 +59,8 @@ import okhttp3.OkHttpClient
 @Composable
 fun AttractionScreen(
     attraction: PlaceItem,
+    isFavorite: Boolean = false,
+    onFavoriteClick: () -> Unit = {},
     onAddToRouteClick: () -> Unit = {},
 ) {
     val uriHandler = LocalUriHandler.current
@@ -90,22 +99,35 @@ fun AttractionScreen(
                 .padding(horizontal = 5.dp)
         ) {
 
-            SubcomposeAsyncImage(
-                model = attraction.imageUrl,
-                imageLoader = imageLoader,
-                contentDescription = attraction.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .clip(RoundedCornerShape(20.dp)),
-                loading = {
-                    Text("Загрузка фотографии...")
-                },
-                error = {
-                    Text("Изображение недоступно")
+            Box(modifier = Modifier.fillMaxWidth()) {
+
+                SubcomposeAsyncImage(
+                    model = attraction.imageUrl,
+                    imageLoader = imageLoader,
+                    contentDescription = attraction.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(20.dp)),
+                    loading = { Text("Загрузка фотографии...") },
+                    error = { Text("Изображение недоступно") }
+                )
+
+                IconButton(
+                    onClick = onFavoriteClick,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .background(Color.White.copy(alpha = 0.8f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                        contentDescription = if (isFavorite) "Убрать из избранного" else "Добавить в избранное",
+                        tint = if (isFavorite) Color.Red else Color.Gray
+                    )
                 }
-            )
+            }
 
 
             Spacer(Modifier.height(16.dp))
