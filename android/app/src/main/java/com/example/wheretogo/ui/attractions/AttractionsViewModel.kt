@@ -41,6 +41,7 @@ class AttractionsViewModel(application: Application) :
 
     init {
         loadAttractions()
+        loadFavorites()
     }
 
     fun updateSearchQuery(query: String) {
@@ -84,5 +85,56 @@ class AttractionsViewModel(application: Application) :
         selectedAttraction = null
         attractionError = null
         isAttractionLoading = false
+    }
+
+    var favoriteIds by mutableStateOf<Set<Long>>(emptySet())
+        private set
+
+    // TODO: подставь id реального авторизованного пользователя
+    private val userId: Long = 1L
+
+    fun isFavorite(place: PlaceItem) = place.id in favoriteIds
+
+    private fun loadFavorites() {
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.apiService.getFavorites(userId)
+                if (response.isSuccessful) {
+                    favoriteIds = response.body().orEmpty().toSet()
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // не критично: просто не покажем сердечки
+            }
+        }
+    }
+
+    fun toggleFavorite(place: PlaceItem) {
+        val id = place.id
+        val wasFavorite = id in favoriteIds
+
+        // сразу обновляем UI, не ждём ответа сервера
+        favoriteIds = if (wasFavorite) favoriteIds - id else favoriteIds + id
+
+        viewModelScope.launch {
+            try {
+                val response = if (wasFavorite) {
+                    RetrofitClient.apiService.removeFavorite(userId, id)
+                } else {
+                    RetrofitClient.apiService.addFavorite(userId, id)
+                }
+                if (!response.isSuccessful) rollback(id, wasFavorite)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                rollback(id, wasFavorite)
+            }
+        }
+    }
+
+    // откат, если сервер не принял изменение
+    private fun rollback(id: Long, wasFavorite: Boolean) {
+        favoriteIds = if (wasFavorite) favoriteIds + id else favoriteIds - id
     }
 }
