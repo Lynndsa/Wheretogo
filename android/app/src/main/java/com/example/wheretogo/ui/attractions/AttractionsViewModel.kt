@@ -2,14 +2,18 @@
 package com.example.wheretogo.ui.attractions
 
 import android.app.Application
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.wheretogo.data.local.SessionManager
 import com.example.wheretogo.data.model.PlaceItem
 import com.example.wheretogo.data.remote.RetrofitClient
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 class AttractionsViewModel(application: Application) :
@@ -39,10 +43,6 @@ class AttractionsViewModel(application: Application) :
     val displayedPlaces: List<PlaceItem>
         get() = attractions
 
-    init {
-        loadAttractions()
-        loadFavorites()
-    }
 
     fun updateSearchQuery(query: String) {
         searchQuery = query
@@ -90,50 +90,76 @@ class AttractionsViewModel(application: Application) :
     var favoriteIds by mutableStateOf<Set<Long>>(emptySet())
         private set
 
-    // TODO: подставь id реального авторизованного пользователя
-    private val userId: Long = 1L
-
     fun isFavorite(place: PlaceItem) = place.id in favoriteIds
+    private val appContext = application.applicationContext
 
-    private fun loadFavorites() {
+    // id текущего пользователя, обновляется автоматически при входе/выходе
+    private var userId: Long? = null
+
+    init {
+        loadAttractions()
+        observeUser()
+    }
+
+    private fun observeUser() {
         viewModelScope.launch {
-            try {
-                val response = RetrofitClient.apiService.getFavorites(userId)
-                if (response.isSuccessful) {
-                    favoriteIds = response.body().orEmpty().toSet()
+            SessionManager.getUserId(appContext)
+                .distinctUntilChanged()
+                .collectLatest { id ->
+                    userId = id
+                    favoriteIds = emptySet()      // сбрасываем чужое избранное
+                    if (id != null) fetchFavorites(id)
                 }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                // не критично: просто не покажем сердечки
-            }
         }
     }
 
+    private suspend fun fetchFavorites(uid: Long) {
+        try {
+            val response = RetrofitClient.apiService.getFavorites(uid)
+            if (response.isSuccessful) {
+                favoriteIds = response.body().orEmpty().toSet()
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // не критично: просто не покажем сердечки
+        }
+    }
     fun toggleFavorite(place: PlaceItem) {
+        val uid = userId ?: run {
+            Log.e("FAV_ERROR", "userId равен null! Пользователь не авторизован.")
+            return
+        }
         val id = place.id
         val wasFavorite = id in favoriteIds
 
-        // сразу обновляем UI, не ждём ответа сервера
+        // Оптимистично меняем UI
         favoriteIds = if (wasFavorite) favoriteIds - id else favoriteIds + id
 
         viewModelScope.launch {
             try {
                 val response = if (wasFavorite) {
-                    RetrofitClient.apiService.removeFavorite(userId, id)
+                    RetrofitClient.apiService.removeFavorite(uid, id)
                 } else {
-                    RetrofitClient.apiService.addFavorite(userId, id)
+                    RetrofitClient.apiService.addFavorite(uid, id)
                 }
-                if (!response.isSuccessful) rollback(id, wasFavorite)
+
+                if (!response.isSuccessful) {
+                    val errorBody = response.errorBody()?.string()
+                    Log.e("FAV_ERROR", "Ошибка сервера: HTTP ${response.code()} | Body: $errorBody")
+                    rollback(id, wasFavorite)
+                } else {
+                    Log.d("FAV_SUCCESS", "Избранное успешно обновлено на сервере")
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                Log.e("FAV_ERROR", "Исключение при запросе избранного", e)
                 rollback(id, wasFavorite)
             }
         }
     }
 
-    // откат, если сервер не принял изменение
     private fun rollback(id: Long, wasFavorite: Boolean) {
         favoriteIds = if (wasFavorite) favoriteIds + id else favoriteIds - id
     }
