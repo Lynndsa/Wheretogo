@@ -29,6 +29,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -78,6 +79,8 @@ fun LoginWindow(
     var password by remember { mutableStateOf("") }
     // Показывать ли пароль открытым текстом (кнопка-«глаз» в поле пароля).
     var passwordVisible by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
 
     // Корневой контейнер: на весь экран, фон из темы, прокручивается по вертикали
     // (нужно, чтобы форма влезала на маленьких экранах и при открытой клавиатуре).
@@ -247,6 +250,34 @@ fun LoginWindow(
                 )
             }
         }
+        Spacer(modifier = Modifier.height(10.dp))
+
+
+        //КНОПКА ДЛЯ ТЕСТИРОВАНИЯ
+//        Button(
+//            onClick = {
+//                viewModel.runExperiments(context)
+//            },
+//            enabled = !viewModel.isExperimentsRunning && !viewModel.isLoading,
+//            modifier = Modifier
+//                .padding(start = 30.dp, end = 30.dp)
+//                .fillMaxWidth()
+//                .height(60.dp),
+//            colors = ButtonDefaults.buttonColors(ButtonColor)
+//        ) {
+//            if (viewModel.isExperimentsRunning) {
+//                CircularProgressIndicator(
+//                    color = BackgroundColor,
+//                    modifier = Modifier.height(24.dp)
+//                )
+//            } else {
+//                Text(
+//                    text = "Запустить эксперименты ЛР №4",
+//                    style = ButtonTextStyle
+//                )
+//            }
+//        }
+
         Spacer(modifier = Modifier.height(10.dp))
 
         // Ссылка-переход на регистрацию. clickable с indication = null отключает
