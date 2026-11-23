@@ -1,0 +1,19 @@
+package com.example.wheretogobackend.mysql.entity;
+
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "favorites")
+public class Favorite {
+
+    @EmbeddedId
+    private FavoriteId id;
+
+    public Favorite() {}
+
+    public Favorite(FavoriteId id) { this.id = id; }
+
+    public FavoriteId getId() { return id; }
+}
