@@ -8,6 +8,7 @@ import com.example.wheretogo.data.remote.dto.LoginRequest
 import com.example.wheretogo.data.remote.dto.RegisterRequest
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
@@ -50,4 +51,19 @@ interface ApiService {
     suspend fun getPlaceDetails(
         @Path("id") id: Long
     ): Response<PlaceItem>
+
+    @GET("api/favorites/{userId}")
+    suspend fun getFavorites(@Path("userId") userId: Long): Response<List<Long>>
+
+    @POST("api/favorites/{userId}/{attractionId}")
+    suspend fun addFavorite(
+        @Path("userId") userId: Long,
+        @Path("attractionId") attractionId: Long
+    ): Response<Unit>
+
+    @DELETE("api/favorites/{userId}/{attractionId}")
+    suspend fun removeFavorite(
+        @Path("userId") userId: Long,
+        @Path("attractionId") attractionId: Long
+    ): Response<Unit>
 }
