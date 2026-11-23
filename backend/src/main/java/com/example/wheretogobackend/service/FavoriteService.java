@@ -17,14 +17,14 @@ public class FavoriteService {
     }
 
     @Transactional(readOnly = true)
-    public List<Integer> getFavoriteAttractionIds(Long userId) {
+    public List<Long> getFavoriteAttractionIds(Long userId) {
         return repository.findByIdIdUser(userId).stream()
                 .map(f -> f.getId().getIdAttraction())
                 .toList();
     }
 
     @Transactional
-    public void add(Long userId, int attractionId) {
+    public void add(Long userId, Long attractionId) {
         FavoriteId id = new FavoriteId(userId, attractionId);
         if (!repository.existsById(id)) {
             repository.save(new Favorite(id));
@@ -32,7 +32,7 @@ public class FavoriteService {
     }
 
     @Transactional
-    public void remove(Long userId, int attractionId) {
+    public void remove(Long userId, Long attractionId) {
         FavoriteId id = new FavoriteId(userId, attractionId);
         if (repository.existsById(id)) {
             repository.deleteById(id);

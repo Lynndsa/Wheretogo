@@ -16,20 +16,20 @@ public class FavoriteController {
     }
 
     @GetMapping("/{userId}")
-    public List<Integer> getFavorites(@PathVariable Long userId) {
+    public List<Long> getFavorites(@PathVariable Long userId) {
         return service.getFavoriteAttractionIds(userId);
     }
 
     @PostMapping("/{userId}/{attractionId}")
     public ResponseEntity<Void> add(@PathVariable Long userId,
-                                    @PathVariable int attractionId) {
+                                    @PathVariable Long attractionId) {
         service.add(userId, attractionId);
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{userId}/{attractionId}")
     public ResponseEntity<Void> remove(@PathVariable Long userId,
-                                       @PathVariable int attractionId) {
+                                       @PathVariable Long attractionId) {
         service.remove(userId, attractionId);
         return ResponseEntity.ok().build();
     }
