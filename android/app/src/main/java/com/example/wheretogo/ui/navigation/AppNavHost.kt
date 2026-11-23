@@ -206,7 +206,9 @@ fun AppNavHost(
                     when {
                         attraction != null -> {
                             AttractionScreen(
-                                attraction = attraction
+                                attraction = attraction,
+                                isFavorite = attractionsViewModel.isFavorite(attraction),
+                                onFavoriteClick = { attractionsViewModel.toggleFavorite(attraction) }
                             )
                         }
 
