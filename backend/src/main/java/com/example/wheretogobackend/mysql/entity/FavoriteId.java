@@ -12,17 +12,17 @@ public class FavoriteId implements Serializable {
     private Long idUser;
 
     @Column(name = "id_attraction")
-    private Long idAttraction;
+    private int idAttraction;
 
     public FavoriteId() {}
 
-    public FavoriteId(Long idUser, Long idAttraction) {
+    public FavoriteId(Long idUser, int idAttraction) {
         this.idUser = idUser;
         this.idAttraction = idAttraction;
     }
 
     public Long getIdUser() { return idUser; }
-    public Long getIdAttraction() { return idAttraction; }
+    public int getIdAttraction() { return idAttraction; }
 
     @Override
     public boolean equals(Object o) {
