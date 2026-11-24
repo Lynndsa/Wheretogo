@@ -105,6 +105,9 @@ jobs:
         run: ./gradlew build --stacktrace
         working-directory: ./backend
 
+      - name: Backend Quality Gate
+        run: pwsh -NoProfile -File ./.github/scripts/check-pmd-quality-gate.ps1
+
       - name: Upload backend build reports
         if: always()
         uses: actions/upload-artifact@v7
