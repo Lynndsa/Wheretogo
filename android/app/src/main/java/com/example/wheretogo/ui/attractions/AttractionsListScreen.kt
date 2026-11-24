@@ -6,8 +6,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -64,6 +67,18 @@ fun AttractionsListScreen(
     val isLoading = attractionsViewModel.isLoading
     val errorMessage = attractionsViewModel.errorMessage
 
+    // Состояние фильтра "Только избранные"
+    var showOnlyFavorites by remember { mutableStateOf(false) }
+
+    // Фильтрация мест по поиску и по избранному
+    val filteredPlaces = remember(displayedPlaces, searchQuery, showOnlyFavorites, attractionsViewModel.favoriteIds) {
+        displayedPlaces.filter { place ->
+            val matchesSearch = searchQuery.isBlank() || (place.title?.contains(searchQuery, ignoreCase = true) == true)
+            val matchesFavorites = !showOnlyFavorites || attractionsViewModel.isFavorite(place)
+            matchesSearch && matchesFavorites
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -71,28 +86,46 @@ fun AttractionsListScreen(
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
 
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = {
-
-            },
+        // Строка поиска + кнопка фильтра избранного
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            placeholder = {
-                Text("Поиск достопримечательностей")
-            },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Поиск"
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { attractionsViewModel.updateSearchQuery(it) },
+                modifier = Modifier.weight(1f),
+                placeholder = {
+                    Text("Поиск достопримечательностей")
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Поиск"
+                    )
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(14.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = ButtonColor,
+                    unfocusedBorderColor = ButtonColor
                 )
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(14.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = ButtonColor,
-                unfocusedBorderColor = ButtonColor
             )
-        )
+
+            IconButton(
+                onClick = { showOnlyFavorites = !showOnlyFavorites },
+                modifier = Modifier
+                    .background(Color.White.copy(alpha = 0.8f), CircleShape)
+                    .size(50.dp)
+            ) {
+                Icon(
+                    imageVector = if (showOnlyFavorites) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                    contentDescription = "Фильтр избранного",
+                    tint = if (showOnlyFavorites) Color.Red else Color.Gray
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -120,13 +153,15 @@ fun AttractionsListScreen(
                 }
             }
 
-            displayedPlaces.isEmpty() -> {
+            filteredPlaces.isEmpty() -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = if (searchQuery.isNotBlank()) {
+                        text = if (showOnlyFavorites) {
+                            "У вас пока нет избранных мест"
+                        } else if (searchQuery.isNotBlank()) {
                             "Ничего не найдено"
                         } else {
                             "Поблизости пока нет мест"
@@ -143,12 +178,11 @@ fun AttractionsListScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(
-                        items = displayedPlaces,
+                        items = filteredPlaces,
                         key = {
-                            "${it.title}_${it.latitude}_${it.longitude}"
+                            "${it.id}_${it.title}_${it.latitude}_${it.longitude}"
                         }
                     ) { place ->
-
                         AttractionCard(
                             place = place,
                             imageLoader = imageLoader,
@@ -177,8 +211,6 @@ private fun AttractionCard(
             .padding(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
-
         SubcomposeAsyncImage(
             model = place.imageUrl,
             imageLoader = imageLoader,
