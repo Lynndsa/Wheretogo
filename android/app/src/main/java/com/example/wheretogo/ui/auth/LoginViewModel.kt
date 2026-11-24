@@ -1,5 +1,6 @@
 package com.example.wheretogo.ui.auth
 
+import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -8,9 +9,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.wheretogo.data.remote.RetrofitClient
 import com.example.wheretogo.data.remote.dto.LoginRequest
+import com.example.wheretogo.test.ExperimentsRunner
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.io.IOException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
 
 /**
  * ViewModel экрана входа ([LoginWindow] в LoginActivity.kt).
@@ -34,6 +39,8 @@ import java.io.IOException
  *   isBlank(), в валидаторе isEmpty()).
  */
 class LoginViewModel : ViewModel() {
+    var isExperimentsRunning by mutableStateOf(false)
+        private set
 
     /** true, пока выполняется запрос. Экран по нему блокирует кнопку и показывает индикатор. */
     var isLoading by mutableStateOf(false)
@@ -204,5 +211,25 @@ class LoginViewModel : ViewModel() {
     fun onPasswordChanged(value: String) {
         passwordError = null
         error = null
+    }
+
+    fun runExperiments(context: Context) {
+        if (isExperimentsRunning) return
+
+        viewModelScope.launch {
+            isExperimentsRunning = true
+
+            try {
+                withContext(Dispatchers.Default) {
+                    ExperimentsRunner.runAllExperiments(
+                        context.applicationContext
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("LAB4_EXPERIMENTS", "Ошибка запуска экспериментов", e)
+            } finally {
+                isExperimentsRunning = false
+            }
+        }
     }
 }

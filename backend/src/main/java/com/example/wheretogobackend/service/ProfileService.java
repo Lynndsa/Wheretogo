@@ -35,14 +35,7 @@ public class ProfileService {
                         "Информация профиля не найдена"
                 ));
 
-        return new ProfileResponse(
-                user.getLogin(),
-                info.getName(),
-                info.getLastname(),
-                info.getSurname(),
-                info.getPhonenumber(),
-                info.getEmail()
-        );
+        return createProfileResponse(user, info);
     }
 
     // Обновление профиля
@@ -65,55 +58,17 @@ public class ProfileService {
                 ));
 
         String newLogin = request.getLogin().trim();
-        String name = request.getName().trim();
-        String lastname = request.getLastname() == null
-                ? null : request.getLastname().trim();
-        String surname = request.getSurname() == null
-                ? null : request.getSurname().trim();
-        String phone = request.getPhonenumber().trim();
-        String email = request.getEmail().trim();
+        String name = trimRequired(request.getName());
+        String lastname = trimOptional(request.getLastname());
+        String surname = trimOptional(request.getSurname());
+        String phone = trimRequired(request.getPhonenumber());
+        String email = trimRequired(request.getEmail());
 
-        // Проверка обязательных полей
-        if (newLogin.isEmpty() || name.isEmpty()
-                || phone.isEmpty() || email.isEmpty()) {
-            throw new RegistrationException(
-                    "EMPTY_FIELD",
-                    "Заполните обязательные поля"
-            );
-        }
+        validateProfileData(newLogin, name, phone, email, user.getIdUser());
 
-        // Проверка уникальности логина
-        if (userRepository.existsByLoginAndIdUserNot(
-                newLogin, user.getIdUser())) {
-            throw new RegistrationException(
-                    "LOGIN_ERROR",
-                    "Пользователь с таким логином уже существует"
-            );
-        }
-
-        // Проверка уникальности телефона
-        if (userInfoRepository.existsByPhonenumberAndIdUserNot(
-                phone, user.getIdUser())) {
-            throw new RegistrationException(
-                    "PHONE_ERROR",
-                    "Этот номер телефона уже зарегистрирован"
-            );
-        }
-
-        // Проверка уникальности почты
-        if (userInfoRepository.existsByEmailAndIdUserNot(
-                email, user.getIdUser())) {
-            throw new RegistrationException(
-                    "EMAIL_ERROR",
-                    "Эта почта уже зарегистрирована"
-            );
-        }
-
-        // Обновление основной таблицы
         user.setLogin(newLogin);
         userRepository.save(user);
 
-        // Обновление персональных данных
         info.setName(name);
         info.setLastname(lastname);
         info.setSurname(surname);
@@ -122,6 +77,86 @@ public class ProfileService {
 
         userInfoRepository.save(info);
 
+        return createProfileResponse(user, info);
+    }
+
+    // Проверка обязательных полей и уникальности данных
+
+    // Проверка обязательных полей и уникальности данных
+    private void validateProfileData(
+            String login,
+            String name,
+            String phone,
+            String email,
+            Long userId
+    ) {
+        validateRequiredFields(login, name, phone, email);
+        validateLoginUniqueness(login, userId);
+        validatePhoneUniqueness(phone, userId);
+        validateEmailUniqueness(email, userId);
+    }
+
+    private void validateRequiredFields(
+            String login,
+            String name,
+            String phone,
+            String email
+    ) {
+        if (isMissing(login) || isMissing(name)
+                || isMissing(phone) || isMissing(email)) {
+            throw new RegistrationException(
+                    "EMPTY_FIELD",
+                    "Заполните обязательные поля"
+            );
+        }
+    }
+
+    private boolean isMissing(String value) {
+        return value == null || value.isBlank();
+    }
+
+    private void validateLoginUniqueness(String login, Long userId) {
+        if (userRepository.existsByLoginAndIdUserNot(login, userId)) {
+            throw new RegistrationException(
+                    "LOGIN_ERROR",
+                    "Пользователь с таким логином уже существует"
+            );
+        }
+    }
+
+    private void validatePhoneUniqueness(String phone, Long userId) {
+        if (userInfoRepository.existsByPhonenumberAndIdUserNot(phone, userId)) {
+            throw new RegistrationException(
+                    "PHONE_ERROR",
+                    "Этот номер телефона уже зарегистрирован"
+            );
+        }
+    }
+
+    private void validateEmailUniqueness(String email, Long userId) {
+        if (userInfoRepository.existsByEmailAndIdUserNot(email, userId)) {
+            throw new RegistrationException(
+                    "EMAIL_ERROR",
+                    "Эта почта уже зарегистрирована"
+            );
+        }
+    }
+
+    // Обработка обязательных строковых полей
+    private String trimRequired(String value) {
+        return value == null ? null : value.trim();
+    }
+
+    // Обработка необязательных строковых полей
+    private String trimOptional(String value) {
+        return value == null ? null : value.trim();
+    }
+
+    // Формирование ответа с данными профиля
+    private ProfileResponse createProfileResponse(
+            UserEntity user,
+            UserInfoEntity info
+    ) {
         return new ProfileResponse(
                 user.getLogin(),
                 info.getName(),
