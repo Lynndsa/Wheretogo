@@ -9,7 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-public class PlaceServiceTest {
+class PlaceServiceTest {
 
     @Autowired(required = false)
     private AttractionService attractionService;
@@ -18,10 +18,8 @@ public class PlaceServiceTest {
     private CustomPlaceService customPlaceService;
 
     @Test
-    public void testImplementationsAndSourcesInteroperability() {
-        assertThat(attractionService).isNotNull();
-        assertThat(customPlaceService).isNotNull();
-        boolean isStorageConfiguredCorrectly = true;
-        assertThat(isStorageConfiguredCorrectly).isTrue();
+    void testImplementationsAndSourcesInteroperability() {
+        assertThat(attractionService != null && customPlaceService != null)
+                .isTrue();
     }
 }

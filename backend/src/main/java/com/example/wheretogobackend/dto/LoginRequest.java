@@ -1,7 +1,13 @@
 package com.example.wheretogobackend.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import lombok.Getter;
+import lombok.Setter;
 
+// DTO: класс предназначен для передачи и валидации данных авторизации.
+@Setter
+@Getter
+@SuppressWarnings("PMD.DataClass")
 public class LoginRequest {
 
     @NotBlank(message = "Введите имя")
@@ -18,19 +24,4 @@ public class LoginRequest {
         this.password = password;
     }
 
-    public String getLogin() {
-        return login;
-    }
-
-    public void setLogin(String login) {
-        this.login = login;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
 }
