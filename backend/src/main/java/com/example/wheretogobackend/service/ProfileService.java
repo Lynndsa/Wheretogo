@@ -22,27 +22,10 @@ public class ProfileService {
     // Получение профиля
     @Transactional(readOnly = true)
     public ProfileResponse getProfile(Long idUser) {
+        UserEntity user = findUser(idUser);
+        UserInfoEntity info = findUserInfo(user.getIdUser());
 
-        UserEntity user = userRepository.findById(idUser)
-                .orElseThrow(() -> new RegistrationException(
-                        "USER_NOT_FOUND",
-                        "Пользователь не найден"
-                ));
-
-        UserInfoEntity info = userInfoRepository.findById(user.getIdUser())
-                .orElseThrow(() -> new RegistrationException(
-                        "PROFILE_NOT_FOUND",
-                        "Информация профиля не найдена"
-                ));
-
-        return new ProfileResponse(
-                user.getLogin(),
-                info.getName(),
-                info.getLastname(),
-                info.getSurname(),
-                info.getPhonenumber(),
-                info.getEmail()
-        );
+        return createProfileResponse(user, info);
     }
 
     // Обновление профиля
@@ -51,18 +34,8 @@ public class ProfileService {
             Long currentIdUser,
             ProfileUpdateRequest request
     ) {
-
-        UserEntity user = userRepository.findById(currentIdUser)
-                .orElseThrow(() -> new RegistrationException(
-                        "USER_NOT_FOUND",
-                        "Пользователь не найден"
-                ));
-
-        UserInfoEntity info = userInfoRepository.findById(user.getIdUser())
-                .orElseThrow(() -> new RegistrationException(
-                        "PROFILE_NOT_FOUND",
-                        "Информация профиля не найдена"
-                ));
+        UserEntity user = findUser(currentIdUser);
+        UserInfoEntity info = findUserInfo(user.getIdUser());
 
         String newLogin = request.getLogin().trim();
         String name = request.getName().trim();
@@ -73,47 +46,14 @@ public class ProfileService {
         String phone = request.getPhonenumber().trim();
         String email = request.getEmail().trim();
 
-        // Проверка обязательных полей
-        if (newLogin.isEmpty() || name.isEmpty()
-                || phone.isEmpty() || email.isEmpty()) {
-            throw new RegistrationException(
-                    "EMPTY_FIELD",
-                    "Заполните обязательные поля"
-            );
-        }
+        validateRequiredFields(newLogin, name, phone, email);
+        validateLogin(newLogin, user.getIdUser());
+        validatePhone(phone, user.getIdUser());
+        validateEmail(email, user.getIdUser());
 
-        // Проверка уникальности логина
-        if (userRepository.existsByLoginAndIdUserNot(
-                newLogin, user.getIdUser())) {
-            throw new RegistrationException(
-                    "LOGIN_ERROR",
-                    "Пользователь с таким логином уже существует"
-            );
-        }
-
-        // Проверка уникальности телефона
-        if (userInfoRepository.existsByPhonenumberAndIdUserNot(
-                phone, user.getIdUser())) {
-            throw new RegistrationException(
-                    "PHONE_ERROR",
-                    "Этот номер телефона уже зарегистрирован"
-            );
-        }
-
-        // Проверка уникальности почты
-        if (userInfoRepository.existsByEmailAndIdUserNot(
-                email, user.getIdUser())) {
-            throw new RegistrationException(
-                    "EMAIL_ERROR",
-                    "Эта почта уже зарегистрирована"
-            );
-        }
-
-        // Обновление основной таблицы
         user.setLogin(newLogin);
         userRepository.save(user);
 
-        // Обновление персональных данных
         info.setName(name);
         info.setLastname(lastname);
         info.setSurname(surname);
@@ -122,6 +62,72 @@ public class ProfileService {
 
         userInfoRepository.save(info);
 
+        return createProfileResponse(user, info);
+    }
+
+    private UserEntity findUser(Long idUser) {
+        return userRepository.findById(idUser)
+                .orElseThrow(() -> new RegistrationException(
+                        "USER_NOT_FOUND",
+                        "Пользователь не найден"
+                ));
+    }
+
+    private UserInfoEntity findUserInfo(Long idUser) {
+        return userInfoRepository.findById(idUser)
+                .orElseThrow(() -> new RegistrationException(
+                        "PROFILE_NOT_FOUND",
+                        "Информация профиля не найдена"
+                ));
+    }
+
+    private void validateRequiredFields(
+            String login,
+            String name,
+            String phone,
+            String email
+    ) {
+        if (login.isEmpty() || name.isEmpty()
+                || phone.isEmpty() || email.isEmpty()) {
+            throw new RegistrationException(
+                    "EMPTY_FIELD",
+                    "Заполните обязательные поля"
+            );
+        }
+    }
+
+    private void validateLogin(String login, Long idUser) {
+        if (userRepository.existsByLoginAndIdUserNot(login, idUser)) {
+            throw new RegistrationException(
+                    "LOGIN_ERROR",
+                    "Пользователь с таким логином уже существует"
+            );
+        }
+    }
+
+    private void validatePhone(String phone, Long idUser) {
+        if (userInfoRepository.existsByPhonenumberAndIdUserNot(
+                phone, idUser)) {
+            throw new RegistrationException(
+                    "PHONE_ERROR",
+                    "Этот номер телефона уже зарегистрирован"
+            );
+        }
+    }
+
+    private void validateEmail(String email, Long idUser) {
+        if (userInfoRepository.existsByEmailAndIdUserNot(email, idUser)) {
+            throw new RegistrationException(
+                    "EMAIL_ERROR",
+                    "Эта почта уже зарегистрирована"
+            );
+        }
+    }
+
+    private ProfileResponse createProfileResponse(
+            UserEntity user,
+            UserInfoEntity info
+    ) {
         return new ProfileResponse(
                 user.getLogin(),
                 info.getName(),
