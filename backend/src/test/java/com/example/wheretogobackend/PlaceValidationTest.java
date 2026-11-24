@@ -1,27 +1,24 @@
 package com.example.wheretogobackend;
 
 import org.junit.jupiter.api.Test;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class PlaceValidationTest {
+class PlaceValidationTest {
 
     @Test
-    public void testPlaceIdValidation() {
+    void testPlaceIdValidation() {
         Long validId = 10L;
         Long invalidId = -1L;
 
-        // Проверяем логику валидации идентификаторов (Правило П1 из таблицы)
-        assertThat(validId).isGreaterThan(0);
-        assertThat(invalidId).isLessThanOrEqualTo(0);
+        assertThat(validId > 0 && invalidId <= 0).isTrue();
     }
 
     @Test
-    public void testPlaceNameValidation() {
+    void testPlaceNameValidation() {
         String placeName = "Музей Эрмитаж";
         String emptyName = "";
 
-        // Проверяем заполнение обязательных полей (Правило П4 из таблицы)
-        assertThat(placeName).isNotBlank();
-        assertThat(emptyName).isEmpty();
+        assertThat(!placeName.isBlank() && emptyName.isEmpty()).isTrue();
     }
 }

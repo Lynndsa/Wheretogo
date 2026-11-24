@@ -8,14 +8,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-public class CustomPlaceServiceTest {
+class CustomPlaceServiceTest {
 
     @Autowired(required = false)
     private CustomPlaceService customPlaceService;
 
     @Test
-    public void testCustomPlaceServiceLoads() {
-        // Проверяем, что сервис успешно создан и готов обрабатывать данные пользователя
+    void testCustomPlaceServiceLoads() {
         assertThat(customPlaceService).isNotNull();
     }
 }
