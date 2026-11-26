@@ -57,7 +57,7 @@ detekt {
     config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
 
     buildUponDefaultConfig = true
-
+    baseline = file("detekt-baseline.xml")
     source.setFrom(
         files("src/main/java/com/example/wheretogo/ui/map")
     )
