@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.detekt)
 }
 
 android {
@@ -52,7 +53,15 @@ android {
         compose = true
     }
 }
+detekt {
+    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
 
+    buildUponDefaultConfig = true
+
+    source.setFrom(
+        files("src/main/java/com/example/wheretogo/ui/map")
+    )
+}
 dependencies {
 
     // Compose
@@ -117,3 +126,5 @@ dependencies {
 
     implementation("androidx.datastore:datastore-preferences:1.3.0")
 }
+
+
