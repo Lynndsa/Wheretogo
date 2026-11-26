@@ -15,6 +15,7 @@ activityKtx = "1.13.0"
 constraintlayout = "2.2.2"
 foundationLayout = "1.12.1"
 playServicesMaps = "20.1.0"
+detekt = "1.23.8"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -43,3 +44,4 @@ play-services-maps = { group = "com.google.android.gms", name = "play-services-m
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
