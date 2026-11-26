@@ -603,3 +603,67 @@ private fun distanceMeters(
 
     return 2 * EARTH_RADIUS_METERS * asin(sqrt(a))
 }
+
+fun calculateOrderStatus(
+    isPaid: Boolean,
+    isDelivered: Boolean,
+    isCancelled: Boolean,
+    hasItems: Boolean,
+    stockAvailable: Boolean,
+    isExpress: Boolean,
+    isWeekend: Boolean,
+    customerVerified: Boolean
+): String {
+    if (isCancelled) {
+        return "Cancelled"
+    }
+
+    if (!hasItems) {
+        return "Empty order"
+    }
+
+    if (!customerVerified) {
+        return "Verification required"
+    }
+
+    if (!stockAvailable) {
+        return "Out of stock"
+    }
+
+    if (!isPaid) {
+        return "Payment pending"
+    }
+
+    if (isDelivered) {
+        return "Delivered"
+    }
+
+    if (isExpress && isWeekend) {
+        return "Express weekend delivery"
+    }
+
+    if (isExpress && !isWeekend) {
+        return "Express delivery"
+    }
+
+    if (!isExpress && isWeekend) {
+        return "Weekend delivery"
+    }
+
+    var priority = 0
+
+    for (i in 1..5) {
+        if (i % 2 == 0) {
+            priority++
+        } else {
+            priority--
+        }
+    }
+
+    when {
+        priority > 0 && isPaid -> return "High priority"
+        priority == 0 && stockAvailable -> return "Normal priority"
+        priority < 0 && customerVerified -> return "Low priority"
+        else -> return "Standard processing"
+    }
+}
