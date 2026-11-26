@@ -1,3 +1,4 @@
+
 package com.example.wheretogobackend.mysql.entity;
 
 import jakarta.persistence.Column;
@@ -7,6 +8,8 @@ import java.util.Objects;
 
 @Embeddable
 public class FavoriteId implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     @Column(name = "id_user")
     private Long idUser;
@@ -21,8 +24,13 @@ public class FavoriteId implements Serializable {
         this.idAttraction = idAttraction;
     }
 
-    public Long getIdUser() { return idUser; }
-    public Long getIdAttraction() { return idAttraction; }
+    public Long getIdUser() {
+        return idUser;
+    }
+
+    public Long getIdAttraction() {
+        return idAttraction;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -37,4 +45,3 @@ public class FavoriteId implements Serializable {
         return Objects.hash(idUser, idAttraction);
     }
 }
-
