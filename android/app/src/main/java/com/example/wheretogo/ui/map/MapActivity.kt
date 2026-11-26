@@ -77,6 +77,5 @@ fun MapWindow(
         ) {
             MapScreen(onPlaceClick = onPlaceClick)
         }
-
     }
 }
