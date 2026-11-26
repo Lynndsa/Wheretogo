@@ -1,0 +1,14 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>LongMethod:MapLibreView.kt$@Composable fun MapLibreView( modifier: Modifier = Modifier, styleUrl: String, places: List&lt;PlaceItem&gt; = emptyList(), initialCenter: LatLng = LatLng( DEFAULT_LATITUDE, DEFAULT_LONGITUDE ), initialZoom: Double = 11.0, isLocationGranted: Boolean = false, onCameraCenterChanged: (LatLng, Int) -&gt; Unit = { _, _ -&gt; }, onPlaceClick: (PlaceItem) -&gt; Unit = {}, onMapClick: () -&gt; Unit = {} )</ID>
+    <ID>LongParameterList:MapLibreView.kt$( context: android.content.Context, styleUrl: String, initialCenter: LatLng, initialZoom: Double, onMapReady: (MapLibreMap) -&gt; Unit, onStyleReady: () -&gt; Unit )</ID>
+    <ID>LongParameterList:MapLibreView.kt$( modifier: Modifier = Modifier, styleUrl: String, places: List&lt;PlaceItem&gt; = emptyList(), initialCenter: LatLng = LatLng( DEFAULT_LATITUDE, DEFAULT_LONGITUDE ), initialZoom: Double = 11.0, isLocationGranted: Boolean = false, onCameraCenterChanged: (LatLng, Int) -&gt; Unit = { _, _ -&gt; }, onPlaceClick: (PlaceItem) -&gt; Unit = {}, onMapClick: () -&gt; Unit = {} )</ID>
+    <ID>MagicNumber:OfflineProgress.kt$OfflineProgress$100</ID>
+    <ID>MagicNumber:OfflineProgress.kt$OfflineProgress$100.0</ID>
+    <ID>NewLineAtEndOfFile:MapActivity.kt$com.example.wheretogo.ui.map.MapActivity.kt</ID>
+    <ID>NewLineAtEndOfFile:OfflineProgress.kt$com.example.wheretogo.ui.map.OfflineProgress.kt</ID>
+    <ID>TooManyFunctions:MapLibreView.kt$com.example.wheretogo.ui.map.MapLibreView.kt</ID>
+  </CurrentIssues>
+</SmellBaseline>
